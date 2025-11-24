@@ -1,0 +1,272 @@
+/* Admin Dashboard Styles */
+.admin-stats-card {
+  background: linear-gradient(135deg, #800000 0%, #a83232 100%);
+  color: white;
+  border-radius: 1.25rem;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(128,0,0,0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: none;
+}
+
+.admin-stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(128,0,0,0.2);
+}
+
+.admin-stats-card .stats-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.admin-stats-card .stats-label {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin-bottom: 0;
+}
+
+.admin-stats-card .stats-icon {
+  font-size: 3rem;
+  opacity: 0.3;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+/* Tab Navigation */
+.nav-tabs {
+  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 2rem;
+}
+
+.nav-tabs .nav-link {
+  border: none;
+  border-radius: 0.75rem 0.75rem 0 0;
+  padding: 1rem 2rem;
+  font-weight: 600;
+  color: #6c757d;
+  transition: all 0.2s;
+}
+
+.nav-tabs .nav-link:hover {
+  border: none;
+  color: #800000;
+  background-color: rgba(128,0,0,0.05);
+}
+
+.nav-tabs .nav-link.active {
+  background: linear-gradient(135deg, #800000 0%, #a83232 100%);
+  color: white;
+  border: none;
+}
+
+/* Approval Tables */
+.approval-table {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.08);
+  overflow: hidden;
+}
+
+.approval-table .table {
+  margin-bottom: 0;
+}
+
+.approval-table .table th {
+  background: linear-gradient(135deg, #800000 0%, #a83232 100%);
+  color: white;
+  border: none;
+  padding: 1rem;
+  font-weight: 600;
+}
+
+.approval-table .table td {
+  padding: 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.approval-table .table tbody tr:hover {
+  background-color: rgba(128,0,0,0.05);
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.status-pending {
+  background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+  color: #212529;
+}
+
+.status-approved {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+}
+
+.status-rejected {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+}
+
+/* Action Buttons */
+.btn-approve {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: none;
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 2rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-approve:hover {
+  background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+}
+
+.btn-reject {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  border: none;
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 2rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-reject:hover {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220,53,69,0.3);
+}
+
+/* Photo Preview */
+.photo-preview {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 0.75rem;
+  border: 3px solid #e9ecef;
+  transition: border-color 0.2s;
+}
+
+.photo-preview:hover {
+  border-color: #800000;
+}
+
+/* Admin Management */
+.admin-list-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.08);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.admin-form {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.08);
+  padding: 2rem;
+}
+
+/* Form Styles */
+.form-control, .form-select {
+  border-radius: 0.75rem;
+  border: 2px solid #e9ecef;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #800000;
+  box-shadow: 0 0 0 0.2rem rgba(128,0,0,0.15);
+}
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+/* Alert Styles */
+.alert {
+  border-radius: 1rem;
+  border: none;
+  padding: 1rem 1.5rem;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+}
+
+.alert-warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  color: #856404;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-stats-card {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .admin-stats-card .stats-number {
+    font-size: 2rem;
+  }
+  
+  .admin-stats-card .stats-icon {
+    font-size: 2.5rem;
+  }
+  
+  .nav-tabs .nav-link {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .approval-table .table th,
+  .approval-table .table td {
+    padding: 0.75rem;
+  }
+  
+  .btn-approve, .btn-reject {
+    padding: 0.4rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .admin-stats-card {
+    padding: 1rem;
+  }
+  
+  .admin-stats-card .stats-number {
+    font-size: 1.75rem;
+  }
+  
+  .nav-tabs .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .admin-list-card,
+  .admin-form {
+    padding: 1.5rem;
+  }
+} 

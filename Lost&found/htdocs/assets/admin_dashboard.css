@@ -1,0 +1,501 @@
+/* --- UB Lost & Found Admin Dashboard Modern Redesign --- */
+:root {
+  --ub-maroon: #800000;
+  --ub-maroon-light: #a83232;
+  --ub-maroon-dark: #4d0000;
+  --ub-gold: #FFD700;
+  --ub-gold-dark: #bfa100;
+  --ub-bg: #f6f7fb;
+  --ub-card-bg: #fff;
+  --ub-sidebar-bg: #800000;
+  --ub-sidebar-active: #FFD700;
+  --ub-sidebar-hover: #a83232;
+  --ub-shadow: 0 6px 32px 0 rgba(128,0,0,0.10);
+  --ub-radius: 1.25rem;
+  --ub-radius-sm: 0.7rem;
+  --ub-text: #222;
+  --ub-text-light: #fff;
+  --ub-table-stripe: #f3e6e6;
+}
+body {
+  background: var(--ub-bg);
+  color: var(--ub-text);
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* Topbar */
+.admin-topbar {
+  background: linear-gradient(90deg, var(--ub-maroon) 60%, var(--ub-maroon-light) 100%);
+  color: var(--ub-gold);
+  padding: 1.2rem 2.5rem 1.2rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 0 0 var(--ub-radius) var(--ub-radius);
+  box-shadow: var(--ub-shadow);
+  margin-bottom: 2.5rem;
+}
+.admin-topbar .ub-logo-3d {
+  font-size: 2.7rem;
+  margin-right: 0.7rem;
+}
+.admin-topbar .admin-user {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+.admin-topbar .admin-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--ub-gold);
+  background: #fff;
+}
+.admin-topbar .btn,
+.admin-topbar .btn-logout {
+  background: var(--ub-gold);
+  color: var(--ub-maroon);
+  border: none;
+  border-radius: 2rem;
+  font-weight: 600;
+  padding: 0.4rem 1.2rem;
+  font-size: 1rem;
+  min-width: 90px;
+  text-align: center;
+  transition: background 0.2s, color 0.2s;
+  display: inline-block;
+}
+.admin-topbar .btn:hover,
+.admin-topbar .btn-logout:hover {
+  background: var(--ub-maroon);
+  color: var(--ub-gold);
+}
+
+/* Sidebar */
+.admin-sidebar {
+  background: var(--ub-sidebar-bg);
+  color: var(--ub-gold);
+  border-radius: var(--ub-radius);
+  box-shadow: var(--ub-shadow);
+  padding: 2.2rem 1.2rem 2.2rem 1.2rem;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.admin-sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--ub-gold);
+  font-weight: 600;
+  font-size: 1.08rem;
+  text-decoration: none;
+  border-radius: var(--ub-radius-sm);
+  padding: 0.7rem 1.1rem;
+  transition: background 0.18s, color 0.18s;
+  position: relative;
+}
+.admin-sidebar a.active {
+  background: var(--ub-sidebar-active);
+  color: var(--ub-maroon);
+  box-shadow: 0 2px 12px 0 rgba(255,215,0,0.10);
+}
+.admin-sidebar a:hover:not(.active) {
+  background: var(--ub-sidebar-hover);
+  color: var(--ub-gold);
+}
+.admin-sidebar i {
+  font-size: 1.2em;
+}
+
+/* Main content */
+.admin-header {
+  margin-bottom: 2.2rem;
+  text-align: center;
+}
+.admin-header h1 {
+  font-size: 2.7rem;
+  font-weight: 900;
+  color: var(--ub-maroon);
+  letter-spacing: 1px;
+}
+.admin-header p {
+  color: var(--ub-maroon-light);
+  font-size: 1.18rem;
+  margin-top: 0.3rem;
+}
+
+/* Card Layout */
+.admin-card {
+  background: var(--ub-card-bg);
+  border-radius: var(--ub-radius);
+  box-shadow: var(--ub-shadow);
+  padding: 2.1rem 1.7rem 1.5rem 1.7rem;
+  margin-bottom: 2rem;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+  transition: box-shadow 0.18s;
+}
+.admin-card:hover {
+  box-shadow: 0 10px 36px 0 rgba(128,0,0,0.13);
+}
+.admin-card h5 {
+  font-weight: 800;
+  color: var(--ub-maroon);
+  margin-bottom: 1.3rem;
+  letter-spacing: 0.5px;
+}
+
+/* Stat Cards - make more compact */
+.admin-stat {
+  min-height: 180px;
+  padding: 1rem 0.7rem;
+  margin-bottom: 1.2rem;
+}
+.admin-stat h5 {
+  font-size: 1.15rem;
+}
+.admin-stat .display-6 {
+  font-size: 2rem;
+}
+
+/* Table Styling */
+.admin-table, .admin-management-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--ub-card-bg);
+  border-radius: var(--ub-radius-sm);
+  overflow: hidden;
+  box-shadow: none;
+  margin-bottom: 0;
+  table-layout: auto;
+}
+.admin-table th, .admin-management-table th {
+  background: var(--ub-maroon);
+  color: var(--ub-gold);
+  font-weight: 700;
+  border: none;
+  padding: 0.95rem 1.1rem;
+  font-size: 1.05em;
+  letter-spacing: 0.5px;
+}
+.admin-table td, .admin-management-table td {
+  padding: 0.7rem 1.1rem;
+  border-bottom: 1px solid #f0eaea;
+  vertical-align: middle;
+  word-break: break-word;
+  font-size: 1.01em;
+}
+.admin-table tr:nth-child(odd) td {
+  background: var(--ub-table-stripe);
+}
+.admin-table tr:last-child td, .admin-management-table tr:last-child td {
+  border-bottom: none;
+}
+.admin-table img[alt="Photo"] {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  background: #f8f9fa;
+  border: 2px solid #eee;
+  border-radius: 0.7rem;
+}
+.admin-table td img[alt="Photo"][style*="border-radius:50%"],
+.admin-table td img[alt="Photo"][style*="border-radius: 50%"] {
+  border-radius: 50%;
+}
+.admin-table tbody tr:hover td {
+  background: #ffe9b3;
+  transition: background 0.18s;
+}
+
+/* Buttons */
+.btn-admin-approve {
+  background: var(--ub-gold);
+  color: var(--ub-maroon);
+  border: none;
+  border-radius: 2rem;
+  font-weight: 700;
+  padding: 0.35rem 1.1rem;
+  margin-right: 0.3rem;
+  box-shadow: 0 2px 8px 0 rgba(255,215,0,0.10);
+  transition: background 0.18s, color 0.18s;
+}
+.btn-admin-approve:hover {
+  background: var(--ub-maroon-light);
+  color: var(--ub-gold);
+}
+.btn-admin-reject {
+  background: #fff;
+  color: var(--ub-maroon);
+  border: 2px solid var(--ub-gold);
+  border-radius: 2rem;
+  font-weight: 700;
+  padding: 0.35rem 1.1rem;
+  box-shadow: 0 2px 8px 0 rgba(255,215,0,0.10);
+  transition: background 0.18s, color 0.18s;
+}
+.btn-admin-reject:hover {
+  background: var(--ub-gold);
+  color: var(--ub-maroon);
+}
+.btn-admin-remove {
+  background: #fff;
+  color: var(--ub-maroon);
+  border: 2px solid var(--ub-gold);
+  border-radius: 2rem;
+  font-weight: 700;
+  padding: 0.35rem 1.1rem;
+  box-shadow: 0 2px 8px 0 rgba(255,215,0,0.10);
+  transition: background 0.18s, color 0.18s;
+}
+.btn-admin-remove:hover {
+  background: var(--ub-gold);
+  color: var(--ub-maroon);
+}
+
+/* Badges */
+.badge-status {
+  font-size: 1.08em;
+  padding: 0.5em 1.2em;
+  border-radius: 1.2em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: var(--ub-maroon);
+  color: var(--ub-gold);
+  box-shadow: 0 2px 8px 0 rgba(128,0,0,0.08);
+}
+.badge-status.bg-success {
+  background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+  color: #222;
+}
+.badge-status.bg-danger {
+  background: linear-gradient(90deg, #ff5858 0%, #f09819 100%);
+  color: #fff;
+}
+
+/* Settings Card */
+.settings-card {
+  background: var(--ub-card-bg);
+  border-radius: var(--ub-radius);
+  box-shadow: var(--ub-shadow);
+  padding: 2rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Responsive Layout */
+@media (max-width: 1200px) {
+  .admin-header h1 {
+    font-size: 2.1rem;
+  }
+  .admin-card {
+    padding: 1.2rem 0.7rem;
+  }
+}
+@media (max-width: 991.98px) {
+  .admin-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.1rem 1rem;
+  }
+  .admin-header h1 {
+    font-size: 1.7rem;
+  }
+  .admin-sidebar {
+    padding: 1.2rem 0.7rem;
+    min-height: unset;
+  }
+}
+@media (max-width: 768px) {
+  .admin-header h1 {
+    font-size: 1.3rem;
+  }
+  .admin-card {
+    padding: 0.7rem 0.3rem;
+    min-height: unset;
+  }
+  .admin-sidebar {
+    padding: 0.7rem 0.3rem;
+  }
+}
+
+/* 3D UB Logo (keep for brand identity) */
+.ub-logo-3d {
+  display: inline-block;
+  font-family: 'Arial Black', 'Helvetica Bold', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 
+    0px 1px 0px rgba(255,255,255,0.8),
+    0px 2px 0px rgba(255,255,255,0.6),
+    0px 3px 0px rgba(255,255,255,0.4),
+    0px 4px 0px rgba(255,255,255,0.2),
+    1px 1px 0px rgba(0,0,0,0.1),
+    2px 2px 0px rgba(0,0,0,0.2),
+    3px 3px 0px rgba(0,0,0,0.3),
+    4px 4px 0px rgba(0,0,0,0.4),
+    5px 5px 0px rgba(0,0,0,0.5),
+    6px 6px 0px rgba(0,0,0,0.6),
+    7px 7px 0px rgba(0,0,0,0.7),
+    8px 8px 0px rgba(0,0,0,0.8),
+    9px 9px 0px rgba(0,0,0,0.9),
+    10px 10px 0px rgba(0,0,0,1),
+    0px 0px 20px rgba(255,215,0,0.5),
+    0px 0px 40px rgba(255,215,0,0.3);
+  letter-spacing: 2px;
+  line-height: 1;
+  transform: perspective(800px) rotateX(15deg) rotateY(-5deg);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  filter: drop-shadow(0px 0px 10px rgba(255,215,0,0.3));
+} 
+
+.admin-card.admin-stat, .admin-stat {
+  background: linear-gradient(120deg, var(--ub-maroon) 0%, var(--ub-maroon-light) 100%) !important;
+  color: #fff !important; /* Default text color: white */
+}
+
+.admin-stat h5,
+.admin-stat .stat-label {
+  color: #fff !important; /* Headings: white */
+  font-weight: 800;
+  font-size: 1.15rem;
+  text-shadow: 1px 1px 2px #4d0000, 0 1px 8px rgba(0,0,0,0.12);
+  margin-bottom: 0.7rem;
+}
+
+.admin-stat .display-6,
+.admin-stat .stat-value {
+  color: var(--ub-gold) !important; /* Numbers: gold */
+  font-weight: 900;
+  font-size: 2rem;
+  text-shadow: 1px 1px 2px #4d0000, 0 1px 8px rgba(0,0,0,0.12);
+} 
+
+/* --- Modernized Pending Confirmation Table Styles --- */
+.admin-card.pending-section {
+  background: linear-gradient(120deg, #fff 80%, #f6f7fb 100%);
+  box-shadow: 0 6px 32px 0 rgba(128,0,0,0.10);
+  border-radius: var(--ub-radius);
+  margin-bottom: 2.2rem;
+  padding: 2.2rem 1.7rem 1.5rem 1.7rem;
+}
+.admin-table.pending-table {
+  border-radius: var(--ub-radius-sm);
+  overflow: hidden;
+  box-shadow: 0 2px 16px 0 rgba(128,0,0,0.07);
+  background: #fff;
+}
+.admin-table.pending-table th {
+  background: linear-gradient(90deg, var(--ub-maroon) 70%, var(--ub-maroon-light) 100%);
+  color: var(--ub-gold);
+  font-weight: 800;
+  border: none;
+  font-size: 1.08em;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 2px #4d0000;
+}
+.admin-table.pending-table td {
+  background: #fff;
+  border-bottom: 1px solid #f0eaea;
+  padding: 1.1rem 1.2rem;
+  vertical-align: middle;
+  font-size: 1.04em;
+  border-radius: 0.7rem;
+  box-shadow: 0 2px 8px 0 rgba(128,0,0,0.03);
+  transition: background 0.18s;
+}
+.admin-table.pending-table tr {
+  margin-bottom: 0.7rem;
+  border-radius: 0.7rem;
+  box-shadow: 0 2px 8px 0 rgba(128,0,0,0.04);
+}
+.admin-table.pending-table tbody tr:hover td {
+  background: #fff3e6;
+  transition: background 0.18s;
+}
+.admin-table.pending-table td img[alt="Photo"] {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--ub-maroon);
+  background: #f8f9fa;
+}
+.admin-table.pending-table td .bi-person-circle {
+  font-size: 2.2rem;
+  color: var(--ub-gold);
+}
+.btn-admin-approve, .btn-admin-reject {
+  font-size: 1.01em;
+  border-radius: 2rem;
+  font-weight: 700;
+  padding: 0.45rem 1.3rem;
+  box-shadow: 0 2px 8px 0 rgba(255,215,0,0.10);
+  margin-right: 0.3rem;
+  margin-bottom: 0.2rem;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+.btn-admin-approve {
+  background: var(--ub-gold);
+  color: var(--ub-maroon);
+  border: none;
+}
+.btn-admin-approve:hover {
+  background: var(--ub-maroon-light);
+  color: var(--ub-gold);
+  box-shadow: 0 4px 16px 0 rgba(128,0,0,0.13);
+}
+.btn-admin-reject {
+  background: #fff;
+  color: var(--ub-maroon);
+  border: 2px solid var(--ub-gold);
+}
+.btn-admin-reject:hover {
+  background: var(--ub-gold);
+  color: var(--ub-maroon);
+  box-shadow: 0 4px 16px 0 rgba(255,215,0,0.13);
+}
+/* Pending status highlight */
+.admin-table.pending-table tr {
+  background: #fff9f6;
+}
+.admin-table.pending-table tr:last-child td {
+  border-bottom: none;
+}
+@media (max-width: 768px) {
+  .admin-card.pending-section {
+    padding: 1.1rem 0.5rem;
+  }
+  .admin-table.pending-table td, .admin-table.pending-table th {
+    padding: 0.7rem 0.5rem;
+    font-size: 0.98em;
+  }
+} 
+
+/* Fix logout button for admin dashboard */
+.admin-topbar .btn-outline-light {
+  color: var(--ub-maroon) !important;
+  background: var(--ub-gold) !important;
+  border: none !important;
+  font-weight: 700;
+  border-radius: 2rem;
+  transition: background 0.18s, color 0.18s;
+}
+.admin-topbar .btn-outline-light:hover {
+  color: var(--ub-gold) !important;
+  background: var(--ub-maroon) !important;
+  border: none !important;
+} 

@@ -1,0 +1,344 @@
+/* University of Batangas Maroon Theme */
+:root {
+  --ub-maroon: #800000;
+  --ub-maroon-dark: #5a0000;
+  --ub-gold: #FFD700;
+  --ub-bg: #f8f9fa;
+  --ub-text: #222;
+  --ub-card-bg: #fff;
+  --ub-modal-bg: #fff;
+}
+body {
+  background: var(--ub-bg);
+  color: var(--ub-text);
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+.navbar {
+  background: var(--ub-maroon) !important;
+}
+.navbar .navbar-brand {
+  color: var(--ub-gold) !important;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.navbar .btn {
+  border-radius: 20px;
+  font-weight: 500;
+}
+.btn-primary, .btn-primary:focus, .btn-primary:active {
+  background: var(--ub-maroon) !important;
+  border-color: var(--ub-maroon-dark) !important;
+}
+.btn-success {
+  background: var(--ub-gold) !important;
+  color: var(--ub-maroon) !important;
+  border: none;
+}
+.btn-outline-light {
+  color: var(--ub-gold) !important;
+  border-color: var(--ub-gold) !important;
+}
+.btn-outline-light:hover {
+  background: var(--ub-gold) !important;
+  color: var(--ub-maroon) !important;
+}
+.table thead {
+  background: var(--ub-maroon);
+  color: var(--ub-gold);
+}
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background: #f3e6e6;
+}
+.modal-header {
+  background: var(--ub-maroon);
+  color: var(--ub-gold);
+}
+.modal-content {
+  border-radius: 12px;
+  background: var(--ub-modal-bg);
+}
+.nav-tabs .nav-link.active {
+  background: var(--ub-maroon);
+  color: var(--ub-gold) !important;
+  border: none;
+}
+.nav-tabs .nav-link {
+  color: var(--ub-maroon);
+  font-weight: 500;
+}
+.alert-info {
+  background: #fff3cd;
+  color: var(--ub-maroon);
+  border-color: var(--ub-gold);
+}
+input[type="file"] {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 6px;
+  background: #fff;
+}
+/* Dark mode styles */
+.dark-mode {
+  --ub-bg: #18191a;
+  --ub-text: #f3f3f3;
+  --ub-card-bg: #232526;
+  --ub-modal-bg: #232526;
+}
+.dark-mode body {
+  background: var(--ub-bg) !important;
+  color: var(--ub-text) !important;
+}
+.dark-mode .navbar {
+  background: #2d0a0a !important;
+}
+.dark-mode .navbar .navbar-brand {
+  color: var(--ub-gold) !important;
+}
+.dark-mode .card, .dark-mode .profile-info-card, .dark-mode .modal-content {
+  background: var(--ub-card-bg) !important;
+  color: var(--ub-text) !important;
+  border-color: #333 !important;
+}
+.dark-mode .modal-header {
+  background: var(--ub-maroon) !important;
+  color: var(--ub-gold) !important;
+}
+.dark-mode .btn-primary, .dark-mode .btn-primary:focus, .dark-mode .btn-primary:active {
+  background: var(--ub-maroon) !important;
+  border-color: var(--ub-maroon-dark) !important;
+}
+.dark-mode .btn-success {
+  background: var(--ub-gold) !important;
+  color: var(--ub-maroon) !important;
+}
+.dark-mode .btn-outline-light {
+  color: var(--ub-gold) !important;
+  border-color: var(--ub-gold) !important;
+}
+.dark-mode .btn-outline-light:hover {
+  background: var(--ub-gold) !important;
+  color: var(--ub-maroon) !important;
+}
+.dark-mode .table thead {
+  background: var(--ub-maroon);
+  color: var(--ub-gold);
+}
+.dark-mode .table-striped > tbody > tr:nth-of-type(odd) {
+  background: #2d0a0a;
+}
+.dark-mode .alert-info {
+  background: #332a00;
+  color: var(--ub-gold);
+  border-color: var(--ub-gold);
+}
+.dark-mode input, .dark-mode textarea, .dark-mode select {
+  background: #232526 !important;
+  color: var(--ub-text) !important;
+  border-color: #444 !important;
+}
+.dark-mode .dropdown-menu {
+  background: #232526 !important;
+  color: var(--ub-text) !important;
+}
+.dark-mode .dropdown-item {
+  color: var(--ub-text) !important;
+}
+.dark-mode .dropdown-item.active, .dark-mode .dropdown-item:active {
+  background: var(--ub-maroon) !important;
+  color: var(--ub-gold) !important;
+}
+
+/* 3D UB Logo */
+.ub-logo-3d {
+  display: inline-block;
+  font-family: 'Arial Black', 'Helvetica Bold', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 
+    0px 1px 0px rgba(255,255,255,0.8),
+    0px 2px 0px rgba(255,255,255,0.6),
+    0px 3px 0px rgba(255,255,255,0.4),
+    0px 4px 0px rgba(255,255,255,0.2),
+    1px 1px 0px rgba(0,0,0,0.1),
+    2px 2px 0px rgba(0,0,0,0.2),
+    3px 3px 0px rgba(0,0,0,0.3),
+    4px 4px 0px rgba(0,0,0,0.4),
+    5px 5px 0px rgba(0,0,0,0.5),
+    6px 6px 0px rgba(0,0,0,0.6),
+    7px 7px 0px rgba(0,0,0,0.7),
+    8px 8px 0px rgba(0,0,0,0.8),
+    9px 9px 0px rgba(0,0,0,0.9),
+    10px 10px 0px rgba(0,0,0,1),
+    0px 0px 20px rgba(255,215,0,0.5),
+    0px 0px 40px rgba(255,215,0,0.3);
+  letter-spacing: 2px;
+  line-height: 1;
+  transform: perspective(800px) rotateX(15deg) rotateY(-5deg);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  filter: drop-shadow(0px 0px 10px rgba(255,215,0,0.3));
+}
+
+.ub-logo-3d::before {
+  content: 'UB';
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: linear-gradient(135deg, #800000 0%, #5a0000 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 
+    1px 1px 0px rgba(0,0,0,0.8),
+    2px 2px 0px rgba(0,0,0,0.9),
+    3px 3px 0px rgba(0,0,0,1);
+  transform: translateZ(-2px);
+  z-index: -1;
+}
+
+.ub-logo-3d:hover {
+  transform: perspective(800px) rotateX(20deg) rotateY(-8deg) scale(1.1);
+  text-shadow: 
+    0px 1px 0px rgba(255,255,255,0.9),
+    0px 2px 0px rgba(255,255,255,0.7),
+    0px 3px 0px rgba(255,255,255,0.5),
+    0px 4px 0px rgba(255,255,255,0.3),
+    1px 1px 0px rgba(0,0,0,0.1),
+    2px 2px 0px rgba(0,0,0,0.2),
+    3px 3px 0px rgba(0,0,0,0.3),
+    4px 4px 0px rgba(0,0,0,0.4),
+    5px 5px 0px rgba(0,0,0,0.5),
+    6px 6px 0px rgba(0,0,0,0.6),
+    7px 7px 0px rgba(0,0,0,0.7),
+    8px 8px 0px rgba(0,0,0,0.8),
+    9px 9px 0px rgba(0,0,0,0.9),
+    10px 10px 0px rgba(0,0,0,1),
+    11px 11px 0px rgba(0,0,0,1),
+    12px 12px 0px rgba(0,0,0,1),
+    0px 0px 25px rgba(255,215,0,0.6),
+    0px 0px 50px rgba(255,215,0,0.4);
+  filter: drop-shadow(0px 0px 15px rgba(255,215,0,0.5));
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .ub-logo-3d {
+    font-size: 2rem;
+    letter-spacing: 1px;
+  }
+}
+
+@media (max-width: 576px) {
+  .ub-logo-3d {
+    font-size: 1.5rem;
+    letter-spacing: 0.5px;
+  }
+} 
+
+/* Index page background and overlay */
+.index-bg {
+  min-height: 100vh;
+  width: 100vw;
+  background: url('../assets/ub_bg.jpg') center center/cover no-repeat fixed;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+.index-bg::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  top: 64px; /* Height of navbar */
+  background: linear-gradient(120deg, rgba(128,0,0,0.7) 0%, rgba(128,0,0,0.5) 60%, rgba(255,215,0,0.2) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.index-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+}
+
+.index-card {
+  background: rgba(255,255,255,0.85);
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.18);
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-width: 480px;
+  margin: 2rem auto;
+  text-align: center;
+}
+
+.index-card h1 {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--ub-maroon);
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+}
+
+.index-card .lead {
+  color: #333;
+  font-size: 1.15rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .index-card {
+    padding: 1.2rem 0.5rem 1.5rem 0.5rem;
+    max-width: 98vw;
+  }
+  .index-card h1 {
+    font-size: 1.3rem;
+  }
+}
+
+/* Modal glass effect for login/signup */
+.modal-content {
+  background: rgba(255,255,255,0.95) !important;
+  border-radius: 1.2rem !important;
+  box-shadow: 0 4px 24px 0 rgba(128,0,0,0.12) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+}
+
+/* Modal header rounded corners fix for clean look */
+.modal-header {
+  border-top-left-radius: 1.2rem !important;
+  border-top-right-radius: 1.2rem !important;
+  background: var(--ub-maroon);
+  color: var(--ub-gold);
+}
+
+/* Navbar brand for index */
+.index-navbar .navbar-brand {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--ub-gold) !important;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 8px rgba(128,0,0,0.25);
+  display: flex;
+  align-items: center;
+} 
+
+.index-navbar {
+  background: var(--ub-maroon) !important;
+  box-shadow: 0 2px 12px 0 rgba(128,0,0,0.10);
+  position: relative;
+  z-index: 10;
+} 

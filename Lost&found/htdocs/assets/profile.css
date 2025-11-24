@@ -1,0 +1,442 @@
+/* Profile page specific styles */
+.profile-banner {
+  background: linear-gradient(120deg, #800000 0%, #a83232 60%, #FFD700 100%);
+  color: #fff;
+  border-radius: 1.5rem 1.5rem 0 0;
+  box-shadow: 0 8px 32px rgba(128,0,0,0.15);
+  height: 220px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 90px;
+}
+.profile-banner .banner-bg {
+  position: absolute;
+  right: 0; bottom: 0; left: 0;
+  top: 0;
+  opacity: 0.08;
+  background: url('https://www.transparenttextures.com/patterns/diamond-upholstery.png');
+  pointer-events: none;
+}
+.profile-photo-wrapper {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -65px;
+  z-index: 10;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.profile-photo {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 6px solid #fff;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.15);
+  background: #fff;
+  position: relative;
+  font-size: 7rem !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-photo-overlay {
+  position: absolute;
+  bottom: 8px; right: 8px;
+  background: #FFD700;
+  color: #800000;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #fff;
+  cursor: pointer;
+  font-size: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 20;
+  transition: background 0.2s, color 0.2s;
+}
+.profile-photo-overlay:hover {
+  background: #800000;
+  color: #FFD700;
+}
+.profile-main {
+  margin-top: 0;
+  text-align: center;
+}
+.profile-name {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-bottom: 0.2rem;
+  color: #222;
+}
+.student-no {
+  font-size: 1.1rem;
+  color: #800000;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.profile-contact {
+  font-size: 1.1rem;
+  color: #444;
+  margin-bottom: 0.5rem;
+}
+.profile-actions .btn {
+  border-radius: 2rem;
+  font-weight: 600;
+  padding: 0.5rem 2rem;
+  font-size: 1.05rem;
+  box-shadow: 0 2px 8px rgba(128,0,0,0.08);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.profile-actions .btn-primary {
+  background: #800000;
+  border: none;
+  color: #FFD700;
+}
+.profile-actions .btn-primary:hover {
+  background: #a83232;
+  color: #FFD700;
+}
+.profile-actions .btn-outline-secondary {
+  border: 2px solid #FFD700;
+  color: #800000;
+  background: #fff;
+}
+.profile-actions .btn-outline-secondary:hover {
+  background: #FFD700;
+  color: #800000;
+}
+.profile-info-card, .profile-activity-card {
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.08);
+  border: none;
+  margin-bottom: 2.5rem;
+  background: #fff;
+}
+.profile-info-card .card-title {
+  font-weight: 700;
+  color: #800000;
+}
+.profile-activity-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #800000;
+  margin-bottom: 1.2rem;
+  text-align: left;
+}
+.profile-activity-cards .card {
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.08);
+  border: none;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.profile-activity-cards .card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(128,0,0,0.15);
+  z-index: 2;
+}
+.profile-activity-cards .card-img-top {
+  border-top-left-radius: 1.25rem;
+  border-top-right-radius: 1.25rem;
+}
+.hidden-file-input {
+  display: none;
+}
+.bi, .bi::before {
+  font-family: 'bootstrap-icons' !important;
+  font-style: normal !important;
+  font-weight: normal !important;
+  font-variant: normal !important;
+  text-transform: none !important;
+  line-height: 1;
+  letter-spacing: normal;
+  display: inline-block;
+  text-decoration: inherit;
+  text-align: center;
+  vertical-align: -0.125em;
+}
+@media (max-width: 768px) {
+  .profile-banner {
+    height: 140px;
+    margin-bottom: 70px;
+  }
+  .profile-photo-wrapper {
+    width: 100px;
+    height: 100px;
+    bottom: -50px;
+  }
+  .profile-photo {
+    width: 100px;
+    height: 100px;
+    font-size: 4rem !important;
+  }
+  .profile-photo-overlay {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+    bottom: 4px;
+    right: 4px;
+  }
+} 
+
+/* Facebook-like Profile Layout - Improved */
+.fb-profile-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 0;
+}
+.fb-cover-banner {
+  width: 100%;
+  height: 280px;
+  background: linear-gradient(120deg, #800000 0%, #a83232 60%, #FFD700 100%);
+  border-radius: 1.5rem 1.5rem 0 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(128,0,0,0.15);
+}
+.fb-cover-banner .banner-bg {
+  position: absolute;
+  right: 0; bottom: 0; left: 0; top: 0;
+  opacity: 0.08;
+  background: url('https://www.transparenttextures.com/patterns/diamond-upholstery.png');
+  pointer-events: none;
+}
+.fb-profile-photo-wrapper.fb-profile-photo-left {
+  position: absolute;
+  left: 40px;
+  top: 200px;
+  /* Overlap the bottom of the banner */
+  transform: none;
+  z-index: 20;
+  width: 170px;
+  height: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.fb-profile-photo {
+  width: 170px;
+  height: 170px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 7px solid #fff;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.15);
+  background: #fff;
+  position: relative;
+  font-size: 8rem !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fb-profile-photo-overlay {
+  position: absolute;
+  bottom: 12px; right: 12px;
+  background: #FFD700;
+  color: #800000;
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #fff;
+  cursor: pointer;
+  font-size: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1000;
+  transition: background 0.2s, color 0.2s;
+}
+.fb-profile-photo-overlay:hover {
+  background: #800000;
+  color: #FFD700;
+}
+.fb-profile-main {
+  margin-top: 100px;
+}
+.fb-intro-card {
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.08);
+  border: none;
+  background: #fff;
+  margin-bottom: 2rem;
+  min-width: 220px;
+  margin-top: 0;
+  padding-top: 40px; /* Add a small buffer for overlap if needed */
+}
+.fb-profile-name {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #222;
+}
+.fb-profile-studentno {
+  font-size: 1.1rem;
+  color: #800000;
+  font-weight: 600;
+}
+.fb-profile-actions .btn {
+  border-radius: 2rem;
+  font-weight: 600;
+  padding: 0.5rem 2rem;
+  font-size: 1.05rem;
+  box-shadow: 0 2px 8px rgba(128,0,0,0.08);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.fb-profile-actions .btn-primary {
+  background: #800000;
+  border: none;
+  color: #FFD700;
+}
+.fb-profile-actions .btn-primary:hover {
+  background: #a83232;
+  color: #FFD700;
+}
+.fb-profile-actions .btn-outline-secondary {
+  border: 2px solid #FFD700;
+  color: #800000;
+  background: #fff;
+}
+.fb-profile-actions .btn-outline-secondary:hover {
+  background: #FFD700;
+  color: #800000;
+}
+.fb-profile-tabs .nav-link.active {
+  background: #FFD700;
+  color: #800000 !important;
+  font-weight: 700;
+  border-color: #FFD700 #FFD700 #fff;
+  z-index: 2;
+}
+.fb-profile-tabs .nav-link {
+  color: #800000;
+  font-weight: 600;
+  border-radius: 0.5rem 0.5rem 0 0;
+  margin-right: 2px;
+  z-index: 1;
+  position: relative;
+}
+.fb-profile-tabs .nav-link:hover {
+  background: #fff7cc;
+  color: #a83232;
+}
+.fb-about-card, .fb-reports-card {
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.08);
+  border: none;
+  background: #fff;
+}
+.profile-activity-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #800000;
+  margin-bottom: 1.2rem;
+  text-align: left;
+}
+.profile-activity-cards .card {
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.08);
+  border: none;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.profile-activity-cards .card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(128,0,0,0.15);
+  z-index: 2;
+}
+.profile-activity-cards .card-img-top {
+  border-top-left-radius: 1.25rem;
+  border-top-right-radius: 1.25rem;
+}
+.profile-activity-cards .badge.bg-success {
+  background: #FFD700 !important;
+  color: #800000 !important;
+}
+.hidden-file-input {
+  display: none;
+}
+.bi, .bi::before {
+  font-family: 'bootstrap-icons' !important;
+  font-style: normal !important;
+  font-weight: normal !important;
+  font-variant: normal !important;
+  text-transform: none !important;
+  line-height: 1;
+  letter-spacing: normal;
+  display: inline-block;
+  text-decoration: inherit;
+  text-align: center;
+  vertical-align: -0.125em;
+}
+.fb-intro-col {
+  margin-top: 0 !important;
+}
+.fb-intro-card {
+  margin-top: 60px; /* Try a lower value */
+}
+@media (max-width: 1200px) {
+  .fb-profile-photo-wrapper.fb-profile-photo-left {
+    left: 10px;
+    top: 160px;
+    width: 120px;
+    height: 120px;
+  }
+  .fb-profile-photo {
+    width: 120px;
+    height: 120px;
+    font-size: 4.5rem !important;
+  }
+  .fb-profile-photo-overlay {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+    bottom: 4px;
+    right: 4px;
+  }
+  .fb-intro-card {
+    margin-top: 70px;
+  }
+}
+@media (max-width: 992px) {
+  .fb-profile-main {
+    margin-top: 50px;
+  }
+  .fb-profile-photo-wrapper.fb-profile-photo-left {
+    left: 50%;
+    transform: translateX(-50%);
+    top: 160px;
+    width: 120px;
+    height: 120px;
+  }
+  .fb-intro-card {
+    margin-top: 40px;
+  }
+}
+@media (max-width: 768px) {
+  .fb-cover-banner {
+    height: 120px;
+    border-radius: 0.8rem 0.8rem 0 0;
+  }
+  .fb-profile-main {
+    margin-top: 80px;
+  }
+  .fb-profile-photo-wrapper.fb-profile-photo-left {
+    width: 80px;
+    height: 80px;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .fb-profile-photo {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem !important;
+  }
+  .fb-intro-card {
+    margin-top: 20px;
+  }
+} 

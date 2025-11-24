@@ -1,0 +1,177 @@
+/* Dashboard Page Styles */
+.hero-section {
+  background: linear-gradient(120deg, #800000 0%, #a83232 60%, #FFD700 100%);
+  color: #fff;
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px rgba(128,0,0,0.15);
+  padding: 3rem 2rem 2rem 2rem;
+  margin-bottom: 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section .hero-bg {
+  position: absolute;
+  right: 0; 
+  bottom: 0; 
+  left: 0;
+  top: 0;
+  opacity: 0.08;
+  background: url('https://www.transparenttextures.com/patterns/diamond-upholstery.png');
+  pointer-events: none;
+}
+
+.hero-section h1 {
+  font-size: 2.7rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.hero-section p {
+  font-size: 1.25rem;
+  font-weight: 400;
+  margin-bottom: 1.5rem;
+}
+
+.hero-section .btn {
+  font-size: 1.1rem;
+  padding: 0.75rem 2.5rem;
+  border-radius: 2rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(128,0,0,0.08);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.hero-section .btn:hover {
+  background: #FFD700;
+  color: #800000;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.15);
+}
+
+.dashboard-cards .card {
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 16px rgba(128,0,0,0.08);
+  transition: transform 0.18s, box-shadow 0.18s;
+  border: none;
+}
+
+.dashboard-cards .card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(128,0,0,0.15);
+  z-index: 2;
+}
+
+.dashboard-cards .card .btn {
+  border-radius: 2rem;
+  font-weight: 500;
+}
+
+.dashboard-cards .card-img-top {
+  border-top-left-radius: 1.25rem;
+  border-top-right-radius: 1.25rem;
+}
+
+/* Modal Styles */
+.modal-content {
+  border-radius: 1.25rem;
+  border: none;
+  box-shadow: 0 10px 40px rgba(128,0,0,0.15);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #800000 0%, #a83232 100%);
+  color: white;
+  border-top-left-radius: 1.25rem;
+  border-top-right-radius: 1.25rem;
+  border-bottom: none;
+  padding: 1.5rem 2rem;
+}
+
+.modal-header .btn-close {
+  filter: invert(1);
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+.modal-footer {
+  border-top: none;
+  padding: 1.5rem 2rem;
+}
+
+/* Form Styles */
+.form-control, .form-select {
+  border-radius: 0.75rem;
+  border: 2px solid #e9ecef;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #800000;
+  box-shadow: 0 0 0 0.2rem rgba(128,0,0,0.15);
+}
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+/* Alert Styles */
+.alert {
+  border-radius: 1rem;
+  border: none;
+  padding: 1rem 1.5rem;
+}
+
+.alert-info {
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+  color: #0c5460;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-section p {
+    font-size: 1.1rem;
+  }
+  
+  .hero-section .btn {
+    font-size: 1rem;
+    padding: 0.6rem 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .dashboard-cards .card {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-section {
+    padding: 1.5rem 1rem 1rem 1rem;
+  }
+  
+  .hero-section h1 {
+    font-size: 1.75rem;
+  }
+  
+  .modal-body {
+    padding: 1.5rem;
+  }
+  
+  .modal-header, .modal-footer {
+    padding: 1rem 1.5rem;
+  }
+} 
