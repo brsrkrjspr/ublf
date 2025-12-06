@@ -179,5 +179,90 @@ class FileUpload {
 
         return true;
     }
+
+    /**
+     * Upload base64 encoded image
+     * 
+     * @param string $base64Data Base64 encoded image data (with or without data:image/... prefix)
+     * @param string $prefix Prefix for filename
+     * @return array Success status and file path
+     */
+    public function uploadBase64Image($base64Data, $prefix = 'photo') {
+        // Remove data:image/... prefix if present
+        if (strpos($base64Data, ',') !== false) {
+            $base64Data = explode(',', $base64Data)[1];
+        }
+        
+        // Decode base64
+        $imageData = base64_decode($base64Data, true);
+        if ($imageData === false) {
+            return [
+                'success' => false,
+                'message' => 'Invalid base64 image data.'
+            ];
+        }
+        
+        // Validate image
+        $imageInfo = @getimagesizefromstring($imageData);
+        if ($imageInfo === false) {
+            return [
+                'success' => false,
+                'message' => 'Invalid image data.'
+            ];
+        }
+        
+        // Check file size
+        $fileSize = strlen($imageData);
+        if ($fileSize > $this->maxFileSize) {
+            return [
+                'success' => false,
+                'message' => 'File size exceeds maximum allowed size of ' . $this->formatBytes($this->maxFileSize) . '.'
+            ];
+        }
+        
+        // Check MIME type
+        $mimeType = $imageInfo['mime'];
+        if (!in_array($mimeType, $this->allowedTypes)) {
+            return [
+                'success' => false,
+                'message' => 'Invalid file type. Only JPG, PNG, GIF, and WebP images are allowed.'
+            ];
+        }
+        
+        // Determine file extension from MIME type
+        $extensions = [
+            'image/jpeg' => 'jpg',
+            'image/jpg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp'
+        ];
+        $ext = $extensions[$mimeType] ?? 'jpg';
+        
+        // Generate unique filename
+        $filename = $prefix . '_' . uniqid() . '_' . time() . '.' . $ext;
+        $targetPath = $this->uploadDir . $filename;
+        
+        // Ensure upload directory exists
+        if (!is_dir($this->uploadDir)) {
+            mkdir($this->uploadDir, 0755, true);
+        }
+        
+        // Save file
+        if (file_put_contents($targetPath, $imageData) !== false) {
+            $relativePath = 'assets/uploads/' . $filename;
+            return [
+                'success' => true,
+                'path' => $relativePath,
+                'filename' => $filename,
+                'message' => 'File uploaded successfully.'
+            ];
+        } else {
+            return [
+                'success' => false,
+                'message' => 'Failed to save uploaded file.'
+            ];
+        }
+    }
 }
 ?> 

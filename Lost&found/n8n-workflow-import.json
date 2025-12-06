@@ -1,0 +1,308 @@
+{
+  "name": "UB Lost & Found Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "chatbot"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input from webhook\nconst input = $input.first().json;\nconst message = input.message.toLowerCase().trim();\nconst studentNo = input.studentNo || '';\nconst studentName = input.studentName || '';\nconst studentEmail = input.studentEmail || '';\n\n// Detect intent\nlet intent = 'general';\nlet entities = {};\n\n// Intent detection\nif (message.includes('lost') || message.includes('report lost') || message.includes('i lost')) {\n  intent = 'lost_item';\n} else if (message.includes('found') || message.includes('report found')) {\n  intent = 'found_item';\n} else if (message.includes('my report') || message.includes('my item') || message.includes('my lost') || message.includes('what did i report')) {\n  intent = 'my_reports';\n} else if (message.includes('search') || message.includes('find') || message.includes('looking for')) {\n  intent = 'search';\n} else if (message.includes('help') || message.includes('how') || message.includes('what can') || message.includes('assist')) {\n  intent = 'help';\n} else if (message.includes('status') || message.includes('check') || message.includes('pending')) {\n  intent = 'status';\n}\n\n// Extract item name if mentioned\nconst itemPatterns = [\n  /(?:lost|found|looking for|searching for|find|looking|search)\\s+(?:my|a|an|the)?\\s*([a-z0-9\\s]+?)(?:\\s|$|\\.|,|at|in)/i,\n  /(?:i|i'm|im)\\s+(?:looking for|searching for|finding)\\s+([a-z0-9\\s]+?)(?:\\s|$|\\.|,)/i\n];\n\nfor (const pattern of itemPatterns) {\n  const match = message.match(pattern);\n  if (match && match[1]) {\n    entities.itemName = match[1].trim();\n    break;\n  }\n}\n\n// Extract location if mentioned\nconst locationMatch = message.match(/(?:at|in|near|around|from)\\s+([a-z0-9\\s]+?)(?:\\s|$|\\.|,)/i);\nif (locationMatch && locationMatch[1]) {\n  entities.location = locationMatch[1].trim();\n}\n\nreturn [{\n  json: {\n    intent: intent,\n    entities: entities,\n    originalMessage: input.message,\n    studentNo: studentNo,\n    studentName: studentName,\n    studentEmail: studentEmail,\n    timestamp: input.timestamp || new Date().toISOString(),\n    sessionId: input.sessionId || ''\n  }\n}];"
+      },
+      "id": "process-message",
+      "name": "Process Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "lost-item",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "lost_item",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "search",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "search",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "my-reports",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "my_reports",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "found-item",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "found_item",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "route-intent",
+      "name": "Route Intent",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://localhost/api/v1/reports?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "your-secret-api-key-change-this"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-lost-items",
+      "name": "Get Lost Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://localhost/api/v1/reports?studentNo={{ $('Process Message').first().json.studentNo }}",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "your-secret-api-key-change-this"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-my-reports",
+      "name": "Get My Reports",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://localhost/api/v1/items?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "your-secret-api-key-change-this"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-found-items",
+      "name": "Get Found Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "merge-paths",
+      "name": "Merge All Paths",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "createMessage",
+        "modelId": "gpt-3.5-turbo",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a helpful assistant for a University Lost & Found system. Help students:\n- Report lost items\n- Search for lost or found items\n- Check their report status\n- Answer questions about the system\n\nBe friendly, concise, and helpful. Use the provided context to give accurate information. If database results are provided, format them clearly and naturally in your response. Keep responses under 200 words unless listing multiple items."
+            },
+            {
+              "role": "user",
+              "content": "=User Question: {{ $('Process Message').first().json.originalMessage }}\n\nStudent Information:\n- Name: {{ $('Process Message').first().json.studentName }}\n- Student Number: {{ $('Process Message').first().json.studentNo }}\n- Intent Detected: {{ $('Process Message').first().json.intent }}\n\nDatabase Results:\n{{ $('Get Lost Items').first() ? 'Lost Items Found:\\n' + JSON.stringify($('Get Lost Items').first().json, null, 2) : ($('Get My Reports').first() ? 'User Reports:\\n' + JSON.stringify($('Get My Reports').first().json, null, 2) : ($('Get Found Items').first() ? 'Found Items:\\n' + JSON.stringify($('Get Found Items').first().json, null, 2) : 'No database results')) }}\n\nPlease provide a helpful response based on the user's question and the available information."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500
+        }
+      },
+      "id": "generate-ai-response",
+      "name": "Generate AI Response",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credential",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get AI response\nconst aiNode = $('Generate AI Response').first();\nconst aiResponse = aiNode.json;\n\n// Extract reply from OpenAI response\nlet reply = '';\nif (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n  reply = aiResponse.choices[0].message.content;\n} else if (aiResponse.message && aiResponse.message.content) {\n  reply = aiResponse.message.content;\n} else if (aiResponse.content) {\n  reply = aiResponse.content;\n} else if (aiResponse.output) {\n  reply = aiResponse.output;\n} else {\n  reply = 'I apologize, but I couldn\\'t generate a response. Please try again.';\n}\n\n// Get context from Process Message node\nconst processNode = $('Process Message').first();\nconst intent = processNode.json.intent;\n\n// Get database results if available\nlet dbResults = null;\nlet resultCount = 0;\n\nconst lostItems = $('Get Lost Items').first();\nconst myReports = $('Get My Reports').first();\nconst foundItems = $('Get Found Items').first();\n\nif (lostItems) {\n  dbResults = lostItems.json;\n  resultCount = dbResults.count || (dbResults.data ? dbResults.data.length : 0);\n} else if (myReports) {\n  dbResults = myReports.json;\n  resultCount = dbResults.count || (dbResults.data ? dbResults.data.length : 0);\n} else if (foundItems) {\n  dbResults = foundItems.json;\n  resultCount = dbResults.count || (dbResults.data ? dbResults.data.length : 0);\n}\n\n// Clean up reply (remove markdown if present)\nreply = reply.trim();\nreply = reply.replace(/\\*\\*(.*?)\\*\\*/g, '$1'); // Remove bold\nreply = reply.replace(/\\*(.*?)\\*/g, '$1'); // Remove italic\n\nreturn [{\n  json: {\n    reply: reply,\n    intent: intent,\n    hasResults: resultCount > 0,\n    resultCount: resultCount,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "send-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.first().json.error;\nconst errorMessage = error?.message || error?.error || 'Unknown error';\n\nreturn [{\n  json: {\n    reply: 'I encountered an error processing your request. Please try again or contact admin for assistance. You can also use the dashboard to report items directly.',\n    error: errorMessage,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-error-response",
+      "name": "Format Error Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Process Message", "type": "main", "index": 0}]]
+    },
+    "Process Message": {
+      "main": [[{"node": "Route Intent", "type": "main", "index": 0}]]
+    },
+    "Route Intent": {
+      "main": [
+        [
+          {"node": "Get Lost Items", "type": "main", "index": 0},
+          {"node": "Get Lost Items", "type": "main", "index": 0}
+        ],
+        [{"node": "Get My Reports", "type": "main", "index": 0}],
+        [{"node": "Get Found Items", "type": "main", "index": 0}],
+        [{"node": "Merge All Paths", "type": "main", "index": 0}]
+      ]
+    },
+    "Get Lost Items": {
+      "main": [[{"node": "Merge All Paths", "type": "main", "index": 0}]]
+    },
+    "Get My Reports": {
+      "main": [[{"node": "Merge All Paths", "type": "main", "index": 0}]]
+    },
+    "Get Found Items": {
+      "main": [[{"node": "Merge All Paths", "type": "main", "index": 0}]]
+    },
+    "Merge All Paths": {
+      "main": [[{"node": "Generate AI Response", "type": "main", "index": 0}]]
+    },
+    "Generate AI Response": {
+      "main": [[{"node": "Format Response", "type": "main", "index": 0}]]
+    },
+    "Format Response": {
+      "main": [[{"node": "Send Response", "type": "main", "index": 0}]]
+    },
+    "Get Lost Items": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Get My Reports": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Get Found Items": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Generate AI Response": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Format Error Response": {
+      "main": [[{"node": "Send Response", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

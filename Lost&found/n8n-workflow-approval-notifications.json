@@ -1,0 +1,191 @@
+{
+  "name": "UB Lost & Found - Approval Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "approval-action",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "approval-action"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// Extract approval data\nconst action = input.action || ''; // 'approve' or 'reject'\nconst type = input.type || ''; // 'report', 'found_item', 'profile_photo'\nconst itemID = input.itemID || input.reportID || input.photoID || '';\nconst adminID = input.adminID || '';\nconst studentNo = input.studentNo || '';\nconst itemName = input.itemName || input.ItemName || '';\nconst studentName = input.studentName || input.StudentName || '';\nconst studentEmail = input.studentEmail || input.Email || '';\n\nreturn [{\n  json: {\n    action: action,\n    type: type,\n    itemID: itemID,\n    adminID: adminID,\n    studentNo: studentNo,\n    itemName: itemName,\n    studentName: studentName,\n    studentEmail: studentEmail,\n    originalData: input\n  }\n}];"
+      },
+      "id": "extract-approval-data",
+      "name": "Extract Approval Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-approved",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-action",
+      "name": "Check Action Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Extract Approval Data').first().json;\nconst isApproved = $('Check Action Type').first().json.action === 'approve';\n\nlet notificationType = '';\nlet title = '';\nlet message = '';\n\nif (data.type === 'report') {\n  notificationType = isApproved ? 'report_approved' : 'report_rejected';\n  title = isApproved ? 'Lost Item Report Approved!' : 'Lost Item Report Rejected';\n  message = isApproved \n    ? `Your lost item report for '${data.itemName}' has been approved and is now visible to other users.`\n    : `Your lost item report for '${data.itemName}' was rejected. Please contact admin for more information.`;\n} else if (data.type === 'found_item') {\n  notificationType = isApproved ? 'item_approved' : 'item_rejected';\n  title = isApproved ? 'Found Item Approved!' : 'Found Item Rejected';\n  message = isApproved \n    ? `Your found item '${data.itemName}' has been approved and is now visible to students.`\n    : `Your found item '${data.itemName}' was rejected.`;\n} else if (data.type === 'profile_photo') {\n  notificationType = isApproved ? 'photo_approved' : 'photo_rejected';\n  title = isApproved ? 'Profile Photo Approved!' : 'Profile Photo Rejected';\n  message = isApproved \n    ? 'Your profile photo has been approved and is now visible to other users.'\n    : 'Your profile photo was rejected. Please upload a new photo.';\n}\n\nreturn [{\n  json: {\n    studentNo: data.studentNo,\n    type: notificationType,\n    title: title,\n    message: message,\n    relatedID: data.itemID,\n    action: data.action,\n    itemName: data.itemName,\n    studentName: data.studentName,\n    studentEmail: data.studentEmail\n  }\n}];"
+      },
+      "id": "format-notification",
+      "name": "Format Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost/api/v1/webhooks",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "your-secret-api-key-change-this"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"create_notification\",\n  \"studentNo\": \"{{ $json.studentNo }}\",\n  \"type\": \"{{ $json.type }}\",\n  \"title\": \"{{ $json.title }}\",\n  \"message\": \"{{ $json.message }}\",\n  \"relatedID\": \"{{ $json.relatedID }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "create-notification",
+      "name": "Create Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "fromEmail": "lostfound@ub.edu.ph",
+        "toEmail": "={{ $('Format Notification').first().json.studentEmail }}",
+        "subject": "={{ $('Format Notification').first().json.title }}",
+        "emailType": "html",
+        "message": "<h2>{{ $('Format Notification').first().json.title }}</h2><p>Hello {{ $('Format Notification').first().json.studentName }},</p><p>{{ $('Format Notification').first().json.message }}</p><p>Please check your dashboard for more details.</p><p>Best regards,<br>UB Lost & Found Team</p>",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1250, 200],
+      "notes": "Configure email credentials (Gmail, SendGrid, etc.)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Format Notification').first().json;\nreturn [{\n  json: {\n    success: true,\n    message: `Notification sent to ${data.studentName} (${data.studentEmail})`,\n    notificationType: data.type,\n    action: data.action,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "send-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.first().json.error;\nreturn [{\n  json: {\n    success: false,\n    error: error?.message || error?.error || 'Unknown error',\n    message: 'Failed to send approval notification'\n  }\n}];"
+      },
+      "id": "error-handler",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Extract Approval Data", "type": "main", "index": 0}]]
+    },
+    "Extract Approval Data": {
+      "main": [[{"node": "Check Action Type", "type": "main", "index": 0}]]
+    },
+    "Check Action Type": {
+      "main": [
+        [{"node": "Format Notification", "type": "main", "index": 0}],
+        [{"node": "Format Notification", "type": "main", "index": 0}]
+      ]
+    },
+    "Format Notification": {
+      "main": [[{"node": "Create Notification", "type": "main", "index": 0}]]
+    },
+    "Create Notification": {
+      "main": [[{"node": "Send Email", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Send Email": {
+      "main": [[{"node": "Format Response", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Format Response": {
+      "main": [[{"node": "Send Response", "type": "main", "index": 0}]]
+    },
+    "Error Handler": {
+      "main": [[{"node": "Send Response", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

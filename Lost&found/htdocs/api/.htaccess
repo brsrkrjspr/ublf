@@ -1,0 +1,69 @@
+# UB Lost & Found API - Apache Configuration
+# This file enables proper URL routing and security for API endpoints
+
+# Enable Rewrite Engine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /api/
+    
+    # Handle API versioning - redirect /api/v1/endpoint to endpoint.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^v1/([^/]+)/?$ v1/$1.php [L,QSA]
+    
+    # Handle trailing slashes
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_URI} !(.*)/$
+    RewriteRule ^(.*)$ $1/ [L,R=301]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header set X-Frame-Options "SAMEORIGIN"
+    
+    # Prevent MIME type sniffing
+    Header set X-Content-Type-Options "nosniff"
+    
+    # Enable XSS protection
+    Header set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # CORS Headers (already handled in base.php, but adding here for preflight)
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, X-API-Key"
+    Header set Access-Control-Max-Age "3600"
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Deny access to sensitive files
+<FilesMatch "\.(env|log|ini|conf)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Allow only specific file types
+<FilesMatch "\.(php|json)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Set default charset
+AddDefaultCharset UTF-8
+
+# PHP Settings (if allowed)
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+</IfModule>
+
+# Error handling
+ErrorDocument 404 /api/v1/error.php
+ErrorDocument 403 /api/v1/error.php
+ErrorDocument 500 /api/v1/error.php
+

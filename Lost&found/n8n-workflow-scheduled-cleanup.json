@@ -1,0 +1,132 @@
+{
+  "name": "UB Lost & Found - Scheduled Cleanup",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Cron Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "notes": "Runs daily at 2 AM"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare cleanup request\nreturn [{\n  json: {\n    action: 'cleanup_notifications',\n    daysOld: 30\n  }\n}];"
+      },
+      "id": "prepare-cleanup",
+      "name": "Prepare Cleanup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost/api/v1/webhooks",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "your-secret-api-key-change-this"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "call-cleanup-api",
+      "name": "Call Cleanup API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst deletedCount = response.deletedCount || 0;\n\nreturn [{\n  json: {\n    success: true,\n    message: `Cleanup completed. Deleted ${deletedCount} old notifications.`,\n    deletedCount: deletedCount,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-result",
+      "name": "Format Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "fromEmail": "lostfound@ub.edu.ph",
+        "toEmail": "admin@ub.edu.ph",
+        "subject": "Daily Cleanup Completed - UB Lost & Found",
+        "emailType": "html",
+        "message": "<h2>Daily Cleanup Report</h2><p>The scheduled cleanup has been completed.</p><p><strong>Notifications Deleted:</strong> {{ $('Format Result').first().json.deletedCount }}</p><p><strong>Time:</strong> {{ $('Format Result').first().json.timestamp }}</p>",
+        "options": {}
+      },
+      "id": "send-report-email",
+      "name": "Send Report Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1050, 300],
+      "notes": "Optional: Send cleanup report to admin"
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.first().json.error;\nreturn [{\n  json: {\n    success: false,\n    error: error?.message || error?.error || 'Unknown error',\n    message: 'Cleanup failed'\n  }\n}];"
+      },
+      "id": "error-handler",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 500]
+    }
+  ],
+  "connections": {
+    "Cron Trigger": {
+      "main": [[{"node": "Prepare Cleanup", "type": "main", "index": 0}]]
+    },
+    "Prepare Cleanup": {
+      "main": [[{"node": "Call Cleanup API", "type": "main", "index": 0}]]
+    },
+    "Call Cleanup API": {
+      "main": [[{"node": "Format Result", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Format Result": {
+      "main": [[{"node": "Send Report Email", "type": "main", "index": 0}]]
+    },
+    "Send Report Email": {
+      "main": [],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

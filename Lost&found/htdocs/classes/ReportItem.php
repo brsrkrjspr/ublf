@@ -73,7 +73,7 @@ class ReportItem {
     }
 
     public function getByStudent($studentNo) {
-        $query = "SELECT ri.ReportID, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.StatusConfirmed,
+        $query = "SELECT ri.ReportID, ri.StudentNo, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.StatusConfirmed,
                          ic.ClassName
                   FROM {$this->table} ri
                   JOIN itemclass ic ON ri.ItemClassID = ic.ItemClassID

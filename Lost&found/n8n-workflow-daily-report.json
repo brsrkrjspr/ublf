@@ -1,0 +1,224 @@
+{
+  "name": "UB Lost & Found - Daily Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Cron Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "notes": "Runs daily at 8 AM"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    action: 'get_dashboard_stats'\n  }\n}];"
+      },
+      "id": "prepare-request",
+      "name": "Prepare Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost/api/v1/webhooks",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "your-secret-api-key-change-this"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-stats",
+      "name": "Get Dashboard Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://localhost/api/v1/reports?limit=10",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "your-secret-api-key-change-this"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-recent-reports",
+      "name": "Get Recent Reports",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://localhost/api/v1/items?limit=10",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "your-secret-api-key-change-this"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-recent-items",
+      "name": "Get Recent Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "merge-data",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stats = $('Get Dashboard Stats').first().json.data || {};\nconst recentReports = $('Get Recent Reports').first().json.data || [];\nconst recentItems = $('Get Recent Items').first().json.data || [];\nconst date = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });\n\n// Format HTML email\nconst htmlReport = `\n<h1>Daily Report - UB Lost & Found</h1>\n<p><strong>Date:</strong> ${date}</p>\n\n<h2>Statistics</h2>\n<ul>\n  <li><strong>Total Students:</strong> ${stats.totalStudents || 0}</li>\n  <li><strong>Pending Photo Approvals:</strong> ${stats.pendingPhotoApprovals || 0}</li>\n  <li><strong>Pending Lost Item Approvals:</strong> ${stats.pendingLostItemApprovals || 0}</li>\n  <li><strong>Pending Found Item Approvals:</strong> ${stats.pendingFoundItemApprovals || 0}</li>\n  <li><strong>Total Approved Lost Items:</strong> ${stats.totalApprovedLostItems || 0}</li>\n  <li><strong>Total Approved Found Items:</strong> ${stats.totalApprovedFoundItems || 0}</li>\n</ul>\n\n<h2>Recent Lost Item Reports</h2>\n${recentReports.length > 0 ? '<ul>' + recentReports.slice(0, 5).map(r => `<li>${r.ItemName || r.itemName} - ${r.ClassName || r.className}</li>`).join('') + '</ul>' : '<p>No recent reports</p>'}\n\n<h2>Recent Found Items</h2>\n${recentItems.length > 0 ? '<ul>' + recentItems.slice(0, 5).map(i => `<li>${i.ItemName || i.itemName} - ${i.ClassName || i.className}</li>`).join('') + '</ul>' : '<p>No recent items</p>'}\n\n<p>Best regards,<br>UB Lost & Found System</p>\n`;\n\nreturn [{\n  json: {\n    htmlReport: htmlReport,\n    stats: stats,\n    recentReportsCount: recentReports.length,\n    recentItemsCount: recentItems.length,\n    date: date\n  }\n}];"
+      },
+      "id": "format-report",
+      "name": "Format Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "fromEmail": "lostfound@ub.edu.ph",
+        "toEmail": "admin@ub.edu.ph",
+        "subject": "Daily Report - UB Lost & Found - {{ $('Format Report').first().json.date }}",
+        "emailType": "html",
+        "message": "={{ $('Format Report').first().json.htmlReport }}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email Report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1250, 300],
+      "notes": "Configure email credentials and update admin email"
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $('Format Report').first().json;\nreturn [{\n  json: {\n    success: true,\n    message: 'Daily report sent successfully',\n    date: report.date,\n    stats: report.stats,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-result",
+      "name": "Format Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.first().json.error;\nreturn [{\n  json: {\n    success: false,\n    error: error?.message || error?.error || 'Unknown error',\n    message: 'Failed to generate daily report'\n  }\n}];"
+      },
+      "id": "error-handler",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 500]
+    }
+  ],
+  "connections": {
+    "Cron Trigger": {
+      "main": [
+        [{"node": "Prepare Request", "type": "main", "index": 0}],
+        [{"node": "Get Recent Reports", "type": "main", "index": 0}],
+        [{"node": "Get Recent Items", "type": "main", "index": 0}]
+      ]
+    },
+    "Prepare Request": {
+      "main": [[{"node": "Get Dashboard Stats", "type": "main", "index": 0}]]
+    },
+    "Get Dashboard Stats": {
+      "main": [[{"node": "Merge Data", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Get Recent Reports": {
+      "main": [[{"node": "Merge Data", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Get Recent Items": {
+      "main": [[{"node": "Merge Data", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Merge Data": {
+      "main": [[{"node": "Format Report", "type": "main", "index": 0}]]
+    },
+    "Format Report": {
+      "main": [[{"node": "Send Email Report", "type": "main", "index": 0}]]
+    },
+    "Send Email Report": {
+      "main": [[{"node": "Format Result", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+
