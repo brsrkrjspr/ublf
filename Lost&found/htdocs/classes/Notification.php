@@ -11,16 +11,49 @@ class Notification {
      */
     public function create($studentNo, $type, $title, $message, $relatedID = null) {
         try {
-            $stmt = $this->conn->prepare('INSERT INTO Notifications (StudentNo, Type, Title, Message, RelatedID) VALUES (:studentNo, :type, :title, :message, :relatedID)');
-            return $stmt->execute([
+            require_once __DIR__ . '/../includes/Logger.php';
+            Logger::log("Notification::create called with:");
+            Logger::log("  - studentNo: $studentNo");
+            Logger::log("  - type: $type");
+            Logger::log("  - title: $title");
+            Logger::log("  - message: " . substr($message, 0, 50) . '...');
+            Logger::log("  - relatedID: " . ($relatedID ?? 'NULL'));
+            
+            if (!$this->conn) {
+                Logger::log("ERROR: Database connection is null");
+                return false;
+            }
+            
+            $stmt = $this->conn->prepare('INSERT INTO notifications (StudentNo, Type, Title, Message, RelatedID) VALUES (:studentNo, :type, :title, :message, :relatedID)');
+            $params = [
                 'studentNo' => $studentNo,
                 'type' => $type,
                 'title' => $title,
                 'message' => $message,
                 'relatedID' => $relatedID
-            ]);
+            ];
+            
+            Logger::log("Executing INSERT with params: " . json_encode($params));
+            $result = $stmt->execute($params);
+            
+            if ($result) {
+                Logger::log("SUCCESS: Notification created with ID: " . $this->conn->lastInsertId());
+            } else {
+                $errorInfo = $stmt->errorInfo();
+                Logger::log("ERROR: Notification creation failed. PDO Error: " . json_encode($errorInfo));
+            }
+            
+            return $result;
         } catch (PDOException $e) {
-            // If table doesn't exist, return false
+            require_once __DIR__ . '/../includes/Logger.php';
+            Logger::log("EXCEPTION in Notification::create: " . $e->getMessage());
+            Logger::log("SQL State: " . $e->getCode());
+            Logger::log("Stack trace: " . $e->getTraceAsString());
+            return false;
+        } catch (Exception $e) {
+            require_once __DIR__ . '/../includes/Logger.php';
+            Logger::log("EXCEPTION in Notification::create: " . $e->getMessage());
+            Logger::log("Stack trace: " . $e->getTraceAsString());
             return false;
         }
     }
@@ -30,7 +63,7 @@ class Notification {
      */
     public function getUnread($studentNo, $limit = 10) {
         try {
-            $stmt = $this->conn->prepare('SELECT * FROM Notifications WHERE StudentNo = :studentNo AND IsRead = 0 ORDER BY CreatedAt DESC LIMIT :limit');
+            $stmt = $this->conn->prepare('SELECT * FROM notifications WHERE StudentNo = :studentNo AND IsRead = 0 ORDER BY CreatedAt DESC LIMIT :limit');
             $stmt->bindValue(':studentNo', $studentNo);
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->execute();
@@ -46,7 +79,7 @@ class Notification {
      */
     public function getAll($studentNo, $limit = 20) {
         try {
-            $stmt = $this->conn->prepare('SELECT * FROM Notifications WHERE StudentNo = :studentNo ORDER BY CreatedAt DESC LIMIT :limit');
+            $stmt = $this->conn->prepare('SELECT * FROM notifications WHERE StudentNo = :studentNo ORDER BY CreatedAt DESC LIMIT :limit');
             $stmt->bindValue(':studentNo', $studentNo);
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->execute();
@@ -62,7 +95,7 @@ class Notification {
      */
     public function markAsRead($notificationID, $studentNo) {
         try {
-            $stmt = $this->conn->prepare('UPDATE Notifications SET IsRead = 1 WHERE NotificationID = :notificationID AND StudentNo = :studentNo');
+            $stmt = $this->conn->prepare('UPDATE notifications SET IsRead = 1 WHERE NotificationID = :notificationID AND StudentNo = :studentNo');
             return $stmt->execute([
                 'notificationID' => $notificationID,
                 'studentNo' => $studentNo
@@ -78,7 +111,7 @@ class Notification {
      */
     public function markAllAsRead($studentNo) {
         try {
-            $stmt = $this->conn->prepare('UPDATE Notifications SET IsRead = 1 WHERE StudentNo = :studentNo AND IsRead = 0');
+            $stmt = $this->conn->prepare('UPDATE notifications SET IsRead = 1 WHERE StudentNo = :studentNo AND IsRead = 0');
             return $stmt->execute(['studentNo' => $studentNo]);
         } catch (PDOException $e) {
             // If table doesn't exist, return false
@@ -91,7 +124,7 @@ class Notification {
      */
     public function getUnreadCount($studentNo) {
         try {
-            $stmt = $this->conn->prepare('SELECT COUNT(*) FROM Notifications WHERE StudentNo = :studentNo AND IsRead = 0');
+            $stmt = $this->conn->prepare('SELECT COUNT(*) FROM notifications WHERE StudentNo = :studentNo AND IsRead = 0');
             $stmt->execute(['studentNo' => $studentNo]);
             return $stmt->fetchColumn();
         } catch (PDOException $e) {
@@ -105,7 +138,7 @@ class Notification {
      */
     public function cleanupOldNotifications() {
         try {
-            $stmt = $this->conn->prepare('DELETE FROM Notifications WHERE CreatedAt < DATE_SUB(NOW(), INTERVAL 30 DAY)');
+            $stmt = $this->conn->prepare('DELETE FROM notifications WHERE CreatedAt < DATE_SUB(NOW(), INTERVAL 30 DAY)');
             return $stmt->execute();
         } catch (PDOException $e) {
             // If table doesn't exist, return false

@@ -17,7 +17,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\n\n// Handle photo - convert to base64 if needed\nlet photoBase64 = null;\nif (input.photoFile) {\n  photoBase64 = input.photoFile;\n} else if (input.photo) {\n  photoBase64 = input.photo;\n}\n\nreturn [{\n  json: {\n    action: 'create_lost_report',\n    studentNo: input.studentNo || '',\n    itemName: input.itemName || '',\n    itemClass: input.itemClass || '',\n    description: input.description || '',\n    dateOfLoss: input.dateOfLoss || '',\n    lostLocation: input.lostLocation || '',\n    photo: photoBase64\n  }\n}];"
+        "jsCode": "// Get input from webhook - simple JSON now\nconst input = $input.first().json || $input.first() || {};\nconst webhookData = input.body || input.json || input || {};\n\n// Extract photoURL (string, not binary)\nconst photoURL = webhookData.photoURL || input.photoURL || null;\n\nconsole.log('Photo URL received:', photoURL ? 'YES' : 'NO');\nif (photoURL) {\n  console.log('Photo URL:', photoURL);\n}\n\nreturn [{\n  json: {\n    action: 'create_lost_report',\n    studentNo: webhookData.studentNo || input.studentNo || '',\n    itemName: webhookData.itemName || input.itemName || '',\n    itemClass: webhookData.itemClass || input.itemClass || '',\n    description: webhookData.description || input.description || '',\n    dateOfLoss: webhookData.dateOfLoss || input.dateOfLoss || '',\n    lostLocation: webhookData.lostLocation || input.lostLocation || '',\n    photoURL: photoURL  // String URL, not base64\n  }\n}];"
       },
       "id": "process-input",
       "name": "Process Input",
@@ -58,7 +58,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nreturn [{\n  json: {\n    success: response.success || false,\n    message: response.message || 'Report processed',\n    data: response.data || null\n  }\n}];"
+        "jsCode": "// Safely extract response data\nconst input = $input.first();\nconst response = input?.json || input || {};\n\n// Handle error responses\nif (response.error || response.success === false) {\n  return [{\n    json: {\n      success: false,\n      message: response.message || response.error || 'Failed to create lost item report',\n      error: response.error || 'Unknown error'\n    }\n  }];\n}\n\n// Handle success responses\nreturn [{\n  json: {\n    success: response.success !== undefined ? response.success : true,\n    message: response.message || 'Lost item report processed successfully',\n    data: response.data || response.id || null\n  }\n}];"
       },
       "id": "format-response",
       "name": "Format Response",

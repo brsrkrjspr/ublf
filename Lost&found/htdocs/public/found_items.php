@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/Database.php';
+require_once __DIR__ . '/../includes/ImageHelper.php';
 session_start();
 if (!isset($_SESSION['student'])) {
     header('Location: index.php');
@@ -108,9 +109,9 @@ if ($conn === null) {
         <div class="col-md-4 col-lg-3">
           <div class="card h-100 shadow-sm">
             <?php if ($item['PhotoURL']): ?>
-              <img src="../<?php echo htmlspecialchars($item['PhotoURL']); ?>" class="card-img-top" alt="Found Item Image" style="object-fit:cover;max-height:180px;">
+              <img src="../<?php echo encodeImageUrl($item['PhotoURL']); ?>" class="card-img-top" alt="Found Item Image" style="object-fit:cover;max-height:180px;" onerror="<?php echo getImageErrorHandler(); ?>">
             <?php else: ?>
-              <img src="https://via.placeholder.com/300x180?text=No+Image" class="card-img-top" alt="No Image">
+              <img src="<?php echo getPlaceholderImage(); ?>" class="card-img-top" alt="No Image">
             <?php endif; ?>
             <div class="card-body d-flex flex-column">
               <div class="d-flex align-items-center mb-2">
@@ -133,7 +134,7 @@ if ($conn === null) {
               </div>
               <div class="modal-body">
                 <?php if ($item['PhotoURL']): ?>
-                  <img src="../<?php echo htmlspecialchars($item['PhotoURL']); ?>" class="img-fluid mb-3" alt="Found Item Image">
+                  <img src="../<?php echo encodeImageUrl($item['PhotoURL']); ?>" class="img-fluid mb-3" alt="Found Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
                 <?php endif; ?>
                 <ul class="list-group list-group-flush mb-2">
                   <li class="list-group-item"><strong>Class:</strong> <?php echo htmlspecialchars($item['ClassName']); ?></li>

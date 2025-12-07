@@ -14,14 +14,22 @@ class ReportItem {
     }
 
     public function create($studentNo, $itemName, $itemClass, $description, $dateOfLoss, $lostLocation, $photoURL = null) {
+        require_once __DIR__ . '/../includes/Logger.php';
+        
+        Logger::log("=== ReportItem::create START ===");
+        Logger::log("StudentNo: $studentNo");
+        Logger::log("ItemName: $itemName");
+        Logger::log("ItemClass: $itemClass");
+        Logger::log("PhotoURL: " . ($photoURL ?? 'NULL'));
+        
         // Get or create ItemClassID
         $itemClassID = $this->getOrCreateItemClass($itemClass);
+        Logger::log("ItemClassID: $itemClassID");
         
         $query = "INSERT INTO {$this->table} (StudentNo, ItemName, ItemClassID, Description, DateOfLoss, LostLocation, PhotoURL, ReportStatusID, StatusConfirmed) 
                   VALUES (:studentNo, :itemName, :itemClassID, :description, :dateOfLoss, :lostLocation, :photoURL, 1, 0)";
         
-        $stmt = $this->conn->prepare($query);
-        $result = $stmt->execute([
+        $params = [
             'studentNo' => $studentNo,
             'itemName' => $itemName,
             'itemClassID' => $itemClassID,
@@ -29,11 +37,40 @@ class ReportItem {
             'dateOfLoss' => $dateOfLoss,
             'lostLocation' => $lostLocation,
             'photoURL' => $photoURL
-        ]);
-
-        return $result ? 
-            ['success' => true, 'message' => 'Lost item report submitted successfully. It will be visible to others after admin approval.', 'id' => $this->conn->lastInsertId()] : 
-            ['success' => false, 'message' => 'Failed to submit lost item report.'];
+        ];
+        
+        Logger::log("SQL Query: $query");
+        Logger::log("Parameters: " . json_encode($params));
+        
+        $stmt = $this->conn->prepare($query);
+        $result = $stmt->execute($params);
+        
+        if ($result) {
+            $insertId = $this->conn->lastInsertId();
+            Logger::log("SUCCESS: Report created with ID: $insertId");
+            
+            // Verify PhotoURL was saved correctly
+            $verifyStmt = $this->conn->prepare("SELECT PhotoURL FROM {$this->table} WHERE ReportID = :id");
+            $verifyStmt->execute(['id' => $insertId]);
+            $savedData = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+            Logger::log("VERIFICATION: PhotoURL in database: " . ($savedData['PhotoURL'] ?? 'NULL'));
+            Logger::log("=== ReportItem::create END (SUCCESS) ===");
+            
+            return [
+                'success' => true,
+                'message' => 'Lost item report submitted successfully. It will be visible to others after admin approval.',
+                'id' => $insertId
+            ];
+        } else {
+            $errorInfo = $stmt->errorInfo();
+            Logger::log("ERROR: Failed to create report. PDO Error: " . json_encode($errorInfo));
+            Logger::log("=== ReportItem::create END (FAILED) ===");
+            
+            return [
+                'success' => false,
+                'message' => 'Failed to submit lost item report.'
+            ];
+        }
     }
 
     private function getOrCreateItemClass($className) {
@@ -53,8 +90,8 @@ class ReportItem {
     }
 
     public function getAllApproved($limit = null, $offset = 0) {
-        $query = "SELECT ri.ReportID, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.StatusConfirmed,
-                         s.StudentName, ic.ClassName
+        $query = "SELECT ri.ReportID, ri.StudentNo, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.StatusConfirmed,
+                         s.StudentName, s.Email, ic.ClassName
                   FROM {$this->table} ri
                   JOIN student s ON ri.StudentNo = s.StudentNo
                   JOIN itemclass ic ON ri.ItemClassID = ic.ItemClassID
@@ -144,8 +181,8 @@ class ReportItem {
     }
 
     public function search($searchTerm, $itemClass = null) {
-        $query = "SELECT ri.ReportID, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.StatusConfirmed,
-                         s.StudentName, ic.ClassName
+        $query = "SELECT ri.ReportID, ri.StudentNo, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.StatusConfirmed,
+                         s.StudentName, s.Email, ic.ClassName
                   FROM {$this->table} ri
                   JOIN student s ON ri.StudentNo = s.StudentNo
                   JOIN itemclass ic ON ri.ItemClassID = ic.ItemClassID
@@ -171,14 +208,20 @@ class ReportItem {
             // Return default item classes
             return ['Electronics', 'Books', 'Clothing', 'Bags', 'ID Cards', 'Keys', 'Others'];
         }
+        // Get ALL classes from itemclass table, not just ones with approved items
         $query = "SELECT DISTINCT ic.ClassName 
                   FROM itemclass ic 
-                  JOIN {$this->table} ri ON ic.ItemClassID = ri.ItemClassID 
-                  WHERE ri.StatusConfirmed = 1 
                   ORDER BY ic.ClassName";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $classes = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        // If no classes in database, return defaults
+        if (empty($classes)) {
+            return ['Electronics', 'Books', 'Clothing', 'Bags', 'ID Cards', 'Keys', 'Others'];
+        }
+        
+        return $classes;
     }
 
     private function createNotification($studentNo, $type, $title, $message) {

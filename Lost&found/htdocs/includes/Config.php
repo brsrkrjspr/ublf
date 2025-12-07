@@ -35,6 +35,9 @@ class Config {
         self::$config = [
             'N8N_WEBHOOK_URL' => getenv('N8N_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/chatbot',
             'N8N_APPROVAL_WEBHOOK_URL' => getenv('N8N_APPROVAL_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/approval-action',
+            'N8N_CREATE_LOST_REPORT_WEBHOOK_URL' => getenv('N8N_CREATE_LOST_REPORT_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/create-lost-report',
+            'N8N_MATCH_DETECTION_FOUND_WEBHOOK_URL' => getenv('N8N_MATCH_DETECTION_FOUND_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/found-item-approved',
+            'N8N_MATCH_DETECTION_LOST_WEBHOOK_URL' => getenv('N8N_MATCH_DETECTION_LOST_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/lost-item-approved',
             'N8N_API_KEY' => getenv('N8N_API_KEY') ?: '',
             'API_KEY' => getenv('API_KEY') ?: 'ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h',
             'ENVIRONMENT' => getenv('ENVIRONMENT') ?: 'development',

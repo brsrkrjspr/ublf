@@ -7,12 +7,18 @@
  */
 
 require_once __DIR__ . '/base.php';
+require_once __DIR__ . '/../../includes/Logger.php';
 require_once __DIR__ . '/../../classes/Student.php';
 require_once __DIR__ . '/../../classes/ReportItem.php';
 require_once __DIR__ . '/../../classes/Item.php';
 require_once __DIR__ . '/../../classes/FileUpload.php';
 require_once __DIR__ . '/../../classes/Notification.php';
 require_once __DIR__ . '/../../classes/Admin.php';
+
+// Suppress PHP errors from corrupting JSON output
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display errors, log them instead
+ini_set('log_errors', 1);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -181,40 +187,106 @@ function handleSignup($data) {
 }
 
 function handleCreateLostReport($data) {
-    $studentNo = $data['studentNo'] ?? '';
-    $itemName = $data['itemName'] ?? '';
-    $itemClass = $data['itemClass'] ?? '';
-    $description = $data['description'] ?? '';
-    $dateOfLoss = $data['dateOfLoss'] ?? '';
-    $lostLocation = $data['lostLocation'] ?? '';
-    $photoData = $data['photo'] ?? null; // Base64 encoded image
+    Logger::log("=== WEBHOOK: handleCreateLostReport START ===");
+    Logger::log("Raw input data keys: " . implode(', ', array_keys($data)));
+    Logger::log("Full input data: " . json_encode($data));
     
-    $required = ['studentNo', 'itemName', 'itemClass', 'description', 'dateOfLoss', 'lostLocation'];
-    foreach ($required as $field) {
-        if (empty($data[$field])) {
-            jsonError("Missing required field: {$field}", 400);
-        }
-        if (empty($$field)) {
-            jsonError("Missing required field: {$field}", 400);
-        }
-    }
-    
-    $photoURL = null;
-    if ($photoData) {
-        // Handle base64 image upload
-        $fileUpload = new FileUpload();
-        $uploadResult = $fileUpload->uploadBase64Image($photoData, 'lost');
-        if ($uploadResult['success']) {
-            $photoURL = $uploadResult['path'];
+    try {
+        $studentNo = $data['studentNo'] ?? '';
+        $itemName = $data['itemName'] ?? '';
+        $itemClass = $data['itemClass'] ?? '';
+        $description = $data['description'] ?? '';
+        $dateOfLoss = $data['dateOfLoss'] ?? '';
+        $lostLocation = $data['lostLocation'] ?? '';
+        $photoURL = $data['photoURL'] ?? null; // Photo URL (string), already uploaded to server
+        
+        Logger::log("Extracted values:");
+        Logger::log("  - studentNo: $studentNo");
+        Logger::log("  - itemName: $itemName");
+        Logger::log("  - itemClass: $itemClass");
+        Logger::log("  - description: " . substr($description, 0, 50) . '...');
+        Logger::log("  - dateOfLoss: $dateOfLoss");
+        Logger::log("  - lostLocation: $lostLocation");
+        Logger::log("  - photoURL: " . ($photoURL ?? 'NULL'));
+        
+        if ($photoURL) {
+            Logger::log("Photo URL received: $photoURL");
+            // Verify file actually exists (optional check)
+            $fullPath = __DIR__ . '/../../' . $photoURL;
+            if (file_exists($fullPath)) {
+                Logger::log("VERIFICATION: Photo file exists at: $fullPath");
+                Logger::log("VERIFICATION: Photo file size: " . filesize($fullPath) . " bytes");
+            } else {
+                Logger::log("WARNING: Photo file NOT FOUND at: $fullPath (but continuing anyway)");
+            }
         } else {
-            jsonError($uploadResult['message'], 400);
+            Logger::log("No photo URL provided (report will be created without photo)");
         }
+        
+        $required = ['studentNo', 'itemName', 'itemClass', 'description', 'dateOfLoss', 'lostLocation'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                Logger::log("ERROR: Missing required field: $field");
+                jsonError("Missing required field: {$field}", 400);
+            }
+            if (empty($$field)) {
+                Logger::log("ERROR: Empty value for field: $field");
+                jsonError("Missing required field: {$field}", 400);
+            }
+        }
+        
+        Logger::log("Final photoURL value before calling ReportItem::create: " . ($photoURL ?? 'NULL'));
+        
+        // Wrap ReportItem instantiation and create() in try-catch
+        try {
+            $reportItem = new ReportItem();
+            $result = $reportItem->create($studentNo, $itemName, $itemClass, $description, $dateOfLoss, $lostLocation, $photoURL);
+        } catch (Exception $e) {
+            Logger::log("EXCEPTION in ReportItem::create: " . $e->getMessage());
+            Logger::log("Stack trace: " . $e->getTraceAsString());
+            jsonError('Failed to create lost report: ' . $e->getMessage(), 500);
+        }
+        
+        Logger::log("ReportItem::create returned: " . json_encode($result));
+        Logger::log("Report creation result: " . ($result['success'] ? 'SUCCESS' : 'FAILED'));
+        
+        // Validate result structure
+        if (!is_array($result) || !isset($result['success'])) {
+            Logger::log("ERROR: Invalid result structure from ReportItem::create");
+            jsonError('Invalid response from report creation', 500);
+        }
+        
+        if (isset($result['id'])) {
+            Logger::log("Report ID: " . $result['id']);
+            
+            // Final verification: Check what's actually in the database
+            try {
+                require_once __DIR__ . '/../../includes/Database.php';
+                $db = new Database();
+                $conn = $db->getConnection();
+                if ($conn) {
+                    $verifyStmt = $conn->prepare("SELECT PhotoURL FROM reportitem WHERE ReportID = :id");
+                    $verifyStmt->execute(['id' => $result['id']]);
+                    $dbRow = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+                    Logger::log("FINAL VERIFICATION: PhotoURL in database for ReportID {$result['id']}: " . ($dbRow['PhotoURL'] ?? 'NULL'));
+                }
+            } catch (Exception $e) {
+                Logger::log("Could not verify database entry: " . $e->getMessage());
+            }
+        }
+        Logger::log("=== WEBHOOK: handleCreateLostReport END ===");
+        
+        jsonResponse($result, $result['success'] ? 201 : 400);
+        
+    } catch (Exception $e) {
+        Logger::log("EXCEPTION in handleCreateLostReport: " . $e->getMessage());
+        Logger::log("Stack trace: " . $e->getTraceAsString());
+        jsonError('Failed to create lost report: ' . $e->getMessage(), 500);
+    } catch (Error $e) {
+        Logger::log("FATAL ERROR in handleCreateLostReport: " . $e->getMessage());
+        Logger::log("Stack trace: " . $e->getTraceAsString());
+        jsonError('Fatal error while creating lost report: ' . $e->getMessage(), 500);
     }
-    
-    $reportItem = new ReportItem();
-    $result = $reportItem->create($studentNo, $itemName, $itemClass, $description, $dateOfLoss, $lostLocation, $photoURL);
-    
-    jsonResponse($result, $result['success'] ? 201 : 400);
 }
 
 function handleCreateFoundReport($data) {
@@ -235,7 +307,8 @@ function handleCreateFoundReport($data) {
     
     $photoURL = null;
     if ($photoData) {
-        $fileUpload = new FileUpload();
+        // Increase max file size to 20MB (20 * 1024 * 1024 = 20971520 bytes)
+        $fileUpload = new FileUpload(null, 20971520);
         $uploadResult = $fileUpload->uploadBase64Image($photoData, 'found');
         if ($uploadResult['success']) {
             $photoURL = $uploadResult['path'];
@@ -540,26 +613,78 @@ function handleGetDashboardStats($data) {
 }
 
 function handleCreateNotification($data) {
-    $studentNo = $data['studentNo'] ?? '';
-    $type = $data['type'] ?? '';
-    $title = $data['title'] ?? '';
-    $message = $data['message'] ?? '';
-    $relatedID = $data['relatedID'] ?? null;
-    
-    if (empty($studentNo) || empty($type) || empty($title) || empty($message)) {
-        jsonError('Student number, type, title, and message are required', 400);
+    try {
+        Logger::log("=== WEBHOOK: handleCreateNotification START ===");
+        Logger::log("Raw input data keys: " . implode(', ', array_keys($data)));
+        
+        $studentNo = $data['studentNo'] ?? '';
+        $type = $data['type'] ?? '';
+        $title = $data['title'] ?? '';
+        $message = $data['message'] ?? '';
+        $relatedID = $data['relatedID'] ?? null;
+        
+        Logger::log("Extracted values:");
+        Logger::log("  - studentNo: $studentNo");
+        Logger::log("  - type: $type");
+        Logger::log("  - title: $title");
+        Logger::log("  - message: " . substr($message, 0, 50) . '...');
+        Logger::log("  - relatedID: " . ($relatedID ?? 'NULL'));
+        
+        if (empty($studentNo) || empty($type) || empty($title) || empty($message)) {
+            Logger::log("ERROR: Missing required fields");
+            jsonError('Student number, type, title, and message are required', 400);
+        }
+        
+        try {
+            $db = new Database();
+            $conn = $db->getConnection();
+            
+            if ($conn === null) {
+                Logger::log("ERROR: Database connection unavailable");
+                jsonError('Database connection unavailable', 500);
+            }
+            
+            $notification = new Notification($conn);
+            $result = $notification->create($studentNo, $type, $title, $message, $relatedID);
+            
+            Logger::log("Notification::create returned: " . ($result ? 'true' : 'false'));
+            
+            $errorMessage = 'Failed to create notification';
+            if (!$result) {
+                // Try to get more details about the failure
+                Logger::log("ERROR: Notification creation returned false");
+                // Check if it's a PDO error
+                if ($conn) {
+                    $errorInfo = $conn->errorInfo();
+                    if ($errorInfo && $errorInfo[0] !== '00000') {
+                        Logger::log("PDO Error Info: " . json_encode($errorInfo));
+                        $errorMessage = 'Failed to create notification: ' . ($errorInfo[2] ?? 'Database error');
+                    }
+                }
+            }
+            
+            Logger::log("=== WEBHOOK: handleCreateNotification END ===");
+            
+            jsonResponse([
+                'success' => $result,
+                'message' => $result ? 'Notification created successfully' : $errorMessage
+            ], $result ? 201 : 400);
+            
+        } catch (Exception $e) {
+            Logger::log("EXCEPTION in Notification::create: " . $e->getMessage());
+            Logger::log("Stack trace: " . $e->getTraceAsString());
+            jsonError('Failed to create notification: ' . $e->getMessage(), 500);
+        }
+        
+    } catch (Exception $e) {
+        Logger::log("EXCEPTION in handleCreateNotification: " . $e->getMessage());
+        Logger::log("Stack trace: " . $e->getTraceAsString());
+        jsonError('Failed to create notification: ' . $e->getMessage(), 500);
+    } catch (Error $e) {
+        Logger::log("FATAL ERROR in handleCreateNotification: " . $e->getMessage());
+        Logger::log("Stack trace: " . $e->getTraceAsString());
+        jsonError('Fatal error while creating notification: ' . $e->getMessage(), 500);
     }
-    
-    $db = new Database();
-    $conn = $db->getConnection();
-    $notification = new Notification($conn);
-    
-    $result = $notification->create($studentNo, $type, $title, $message, $relatedID);
-    
-    jsonResponse([
-        'success' => $result,
-        'message' => $result ? 'Notification created successfully' : 'Failed to create notification'
-    ], $result ? 201 : 400);
 }
 
 function handleCleanupNotifications($data) {

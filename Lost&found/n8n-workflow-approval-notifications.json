@@ -17,7 +17,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\n\n// Extract approval data\nconst action = input.action || ''; // 'approve' or 'reject'\nconst type = input.type || ''; // 'report', 'found_item', 'profile_photo'\nconst itemID = input.itemID || input.reportID || input.photoID || '';\nconst adminID = input.adminID || '';\nconst studentNo = input.studentNo || '';\nconst itemName = input.itemName || input.ItemName || '';\nconst studentName = input.studentName || input.StudentName || '';\nconst studentEmail = input.studentEmail || input.Email || '';\n\nreturn [{\n  json: {\n    action: action,\n    type: type,\n    itemID: itemID,\n    adminID: adminID,\n    studentNo: studentNo,\n    itemName: itemName,\n    studentName: studentName,\n    studentEmail: studentEmail,\n    originalData: input\n  }\n}];"
+        "jsCode": "// Get input from webhook - data is in body property\nconst input = $input.first().json || $input.first() || {};\nconst webhookData = input.body || input.json || input || {};\n\n// Extract approval data\nconst action = webhookData.action || input.action || '';\nconst type = webhookData.type || input.type || '';\nconst itemID = webhookData.itemID || webhookData.reportID || webhookData.photoID || input.itemID || input.reportID || input.photoID || '';\nconst adminID = webhookData.adminID || input.adminID || '';\nconst studentNo = webhookData.studentNo || input.studentNo || '';\nconst itemName = webhookData.itemName || webhookData.ItemName || input.itemName || input.ItemName || '';\nconst studentName = webhookData.studentName || webhookData.StudentName || input.studentName || input.StudentName || '';\nconst studentEmail = webhookData.studentEmail || webhookData.Email || input.studentEmail || input.Email || (studentNo ? `${studentNo}@ub.edu.ph` : '');\n\n// Get admin email (fixed email address)\nconst adminEmail = webhookData.adminEmail || input.adminEmail || 'foundlost004@gmail.com';\n\nreturn [{\n  json: {\n    action: action,\n    type: type,\n    itemID: itemID,\n    adminID: adminID,\n    studentNo: studentNo,\n    itemName: itemName,\n    studentName: studentName,\n    studentEmail: studentEmail,\n    adminEmail: adminEmail,\n    originalData: webhookData\n  }\n}];"
       },
       "id": "extract-approval-data",
       "name": "Extract Approval Data",
@@ -56,13 +56,42 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $('Extract Approval Data').first().json;\nconst isApproved = $('Check Action Type').first().json.action === 'approve';\n\nlet notificationType = '';\nlet title = '';\nlet message = '';\n\nif (data.type === 'report') {\n  notificationType = isApproved ? 'report_approved' : 'report_rejected';\n  title = isApproved ? 'Lost Item Report Approved!' : 'Lost Item Report Rejected';\n  message = isApproved \n    ? `Your lost item report for '${data.itemName}' has been approved and is now visible to other users.`\n    : `Your lost item report for '${data.itemName}' was rejected. Please contact admin for more information.`;\n} else if (data.type === 'found_item') {\n  notificationType = isApproved ? 'item_approved' : 'item_rejected';\n  title = isApproved ? 'Found Item Approved!' : 'Found Item Rejected';\n  message = isApproved \n    ? `Your found item '${data.itemName}' has been approved and is now visible to students.`\n    : `Your found item '${data.itemName}' was rejected.`;\n} else if (data.type === 'profile_photo') {\n  notificationType = isApproved ? 'photo_approved' : 'photo_rejected';\n  title = isApproved ? 'Profile Photo Approved!' : 'Profile Photo Rejected';\n  message = isApproved \n    ? 'Your profile photo has been approved and is now visible to other users.'\n    : 'Your profile photo was rejected. Please upload a new photo.';\n}\n\nreturn [{\n  json: {\n    studentNo: data.studentNo,\n    type: notificationType,\n    title: title,\n    message: message,\n    relatedID: data.itemID,\n    action: data.action,\n    itemName: data.itemName,\n    studentName: data.studentName,\n    studentEmail: data.studentEmail\n  }\n}];"
+        "jsCode": "const data = $('Extract Approval Data').first().json;\nconst isApproved = $('Check Action Type').first().json.action === 'approve';\n\nlet notificationType = '';\nlet title = '';\nlet message = '';\nlet adminTitle = '';\nlet adminMessage = '';\n\nif (data.type === 'report') {\n  notificationType = isApproved ? 'report_approved' : 'report_rejected';\n  title = isApproved ? 'Lost Item Report Approved!' : 'Lost Item Report Rejected';\n  message = isApproved \n    ? `Your lost item report for '${data.itemName}' has been approved and is now visible to other users.`\n    : `Your lost item report for '${data.itemName}' was rejected. Please contact admin for more information.`;\n  adminTitle = isApproved ? 'Lost Item Report Approved' : 'Lost Item Report Rejected';\n  adminMessage = isApproved\n    ? `You have approved the lost item report for '${data.itemName}' submitted by ${data.studentName} (${data.studentNo}).`\n    : `You have rejected the lost item report for '${data.itemName}' submitted by ${data.studentName} (${data.studentNo}).`;\n} else if (data.type === 'found_item') {\n  notificationType = isApproved ? 'item_approved' : 'item_rejected';\n  title = isApproved ? 'Found Item Approved!' : 'Found Item Rejected';\n  message = isApproved \n    ? `Your found item '${data.itemName}' has been approved and is now visible to students.`\n    : `Your found item '${data.itemName}' was rejected.`;\n  adminTitle = isApproved ? 'Found Item Approved' : 'Found Item Rejected';\n  adminMessage = isApproved\n    ? `You have approved the found item '${data.itemName}'.`\n    : `You have rejected the found item '${data.itemName}'.`;\n} else if (data.type === 'profile_photo') {\n  notificationType = isApproved ? 'photo_approved' : 'photo_rejected';\n  title = isApproved ? 'Profile Photo Approved!' : 'Profile Photo Rejected';\n  message = isApproved \n    ? 'Your profile photo has been approved and is now visible to other users.'\n    : 'Your profile photo was rejected. Please upload a new photo.';\n  adminTitle = isApproved ? 'Profile Photo Approved' : 'Profile Photo Rejected';\n  adminMessage = isApproved\n    ? `You have approved the profile photo for ${data.studentName} (${data.studentNo}).`\n    : `You have rejected the profile photo for ${data.studentName} (${data.studentNo}).`;\n}\n\nreturn [{\n  json: {\n    studentNo: data.studentNo,\n    type: notificationType,\n    title: title,\n    message: message,\n    adminTitle: adminTitle,\n    adminMessage: adminMessage,\n    relatedID: data.itemID,\n    action: data.action,\n    itemName: data.itemName,\n    studentName: data.studentName,\n    studentEmail: data.studentEmail,\n    adminEmail: data.adminEmail,\n    originalType: data.type\n  }\n}];"
       },
       "id": "format-notification",
       "name": "Format Notification",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-not-found-item",
+              "leftValue": "={{ $json.originalType }}",
+              "rightValue": "found_item",
+              "operator": {
+                "type": "string",
+                "operation": "notEqual"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-item-type",
+      "name": "Check Item Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
     },
     {
       "parameters": {
@@ -97,26 +126,53 @@
     },
     {
       "parameters": {
-        "authentication": "oAuth2",
-        "resource": "message",
         "operation": "send",
-        "fromEmail": "lostfound@ub.edu.ph",
-        "toEmail": "={{ $('Format Notification').first().json.studentEmail }}",
-        "subject": "={{ $('Format Notification').first().json.title }}",
+        "fromEmail": "foundlost004@gmail.com",
+        "toEmail": "={{ $json.studentEmail }}",
+        "subject": "={{ $json.title }}",
         "emailType": "html",
-        "message": "<h2>{{ $('Format Notification').first().json.title }}</h2><p>Hello {{ $('Format Notification').first().json.studentName }},</p><p>{{ $('Format Notification').first().json.message }}</p><p>Please check your dashboard for more details.</p><p>Best regards,<br>UB Lost & Found Team</p>",
+        "html": "=<h2>{{ $json.title }}</h2><p>Hello {{ $json.studentName || 'Student' }},</p><p>{{ $json.message }}</p><p>Please check your dashboard for more details.</p><p>Best regards,<br>UB Lost & Found Team</p>",
         "options": {}
       },
-      "id": "send-email",
-      "name": "Send Email",
+      "id": "send-email-student",
+      "name": "Send Email to Student",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [1250, 200],
-      "notes": "Configure email credentials (Gmail, SendGrid, etc.)"
+      "position": [1250, 150],
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": ""
+        }
+      },
+      "notes": "Configure SMTP credential in the UI. Select your SMTP account from the credential dropdown."
     },
     {
       "parameters": {
-        "jsCode": "const data = $('Format Notification').first().json;\nreturn [{\n  json: {\n    success: true,\n    message: `Notification sent to ${data.studentName} (${data.studentEmail})`,\n    notificationType: data.type,\n    action: data.action,\n    timestamp: new Date().toISOString()\n  }\n}];"
+        "operation": "send",
+        "fromEmail": "foundlost004@gmail.com",
+        "toEmail": "={{ $json.adminEmail }}",
+        "subject": "={{ $json.adminTitle }}",
+        "emailType": "html",
+        "html": "=<h2>{{ $json.adminTitle }}</h2><p>Hello Admin,</p><p>{{ $json.adminMessage }}</p><p><strong>Action:</strong> {{ $json.action }}</p><p><strong>Type:</strong> {{ $json.type }}</p>{{ $json.itemName ? `<p><strong>Item:</strong> ${$json.itemName}</p>` : '' }}{{ $json.studentName ? `<p><strong>Student:</strong> ${$json.studentName} (${$json.studentNo})</p>` : '' }}<p>Best regards,<br>UB Lost & Found System</p>",
+        "options": {}
+      },
+      "id": "send-email-admin",
+      "name": "Send Email to Admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1250, 250],
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": ""
+        }
+      },
+      "notes": "Configure SMTP credential in the UI. Select your SMTP account from the credential dropdown."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get data from input (passed from email nodes)\nconst inputData = $input.all();\nconst firstData = inputData[0]?.json || {};\n\n// Try to get data from Format Notification if available, otherwise use input\nlet data = {};\ntry {\n  const formatData = $('Format Notification').first()?.json;\n  if (formatData) {\n    data = formatData;\n  } else {\n    // Fallback: use data from email node input\n    data = firstData;\n  }\n} catch (e) {\n  // If Format Notification not available, use input\n  data = firstData;\n}\n\n// Determine what was sent based on item type\nconst isFoundItem = data.originalType === 'found_item';\nconst studentNotificationSent = !isFoundItem && data.studentEmail;\nconst adminNotificationSent = data.adminEmail;\n\nlet message = '';\nif (isFoundItem) {\n  message = `Admin notification sent (${data.adminEmail || 'N/A'}). Student notification skipped (found items are admin-reported).`;\n} else {\n  message = `Notifications sent to student (${data.studentEmail || 'N/A'}) and admin (${data.adminEmail || 'N/A'})`;\n}\n\nreturn [{\n  json: {\n    success: true,\n    message: message,\n    notificationType: data.type || 'unknown',\n    action: data.action || 'unknown',\n    itemType: data.originalType || 'unknown',\n    studentNotificationSent: studentNotificationSent,\n    adminNotificationSent: adminNotificationSent,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
       "id": "format-response",
       "name": "Format Response",
@@ -161,13 +217,25 @@
       ]
     },
     "Format Notification": {
-      "main": [[{"node": "Create Notification", "type": "main", "index": 0}]]
+      "main": [
+        [{"node": "Check Item Type", "type": "main", "index": 0}],
+        [{"node": "Send Email to Admin", "type": "main", "index": 0}]
+      ]
+    },
+    "Check Item Type": {
+      "main": [
+        [{"node": "Create Notification", "type": "main", "index": 0}],
+        []
+      ]
     },
     "Create Notification": {
-      "main": [[{"node": "Send Email", "type": "main", "index": 0}]],
+      "main": [[{"node": "Send Email to Student", "type": "main", "index": 0}]]
+    },
+    "Send Email to Student": {
+      "main": [[{"node": "Format Response", "type": "main", "index": 0}]],
       "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
     },
-    "Send Email": {
+    "Send Email to Admin": {
       "main": [[{"node": "Format Response", "type": "main", "index": 0}]],
       "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
     },
@@ -188,4 +256,3 @@
   "updatedAt": "2024-01-01T00:00:00.000Z",
   "versionId": "1"
 }
-

@@ -1,0 +1,18 @@
+# PHP Upload Configuration
+# Increase file upload limits to support 20MB files
+
+# Maximum file upload size (20MB)
+php_value upload_max_filesize 20M
+
+# Maximum POST data size (24MB - must be larger than upload_max_filesize)
+php_value post_max_size 24M
+
+# Maximum execution time (5 minutes)
+php_value max_execution_time 300
+
+# Maximum input time (5 minutes)
+php_value max_input_time 300
+
+# Note: If your server doesn't allow php_value directives,
+# you may need to contact your hosting provider or modify php.ini directly
+

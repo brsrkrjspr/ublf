@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../includes/Database.php';
+require_once __DIR__ . '/../includes/ImageHelper.php';
 if (!isset($_SESSION['student'])) {
     header('Location: index.php');
     exit;
@@ -146,9 +147,9 @@ unset($_SESSION['profile_msg']);
                   <div class="col-md-6 col-lg-4">
           <div class="card h-100 shadow-sm">
             <?php if ($report['PhotoURL']): ?>
-              <img src="../<?php echo htmlspecialchars($report['PhotoURL']); ?>" class="card-img-top" alt="Lost Item Image" style="object-fit:cover;max-height:180px;">
+              <img src="../<?php echo encodeImageUrl($report['PhotoURL']); ?>" class="card-img-top" alt="Lost Item Image" style="object-fit:cover;max-height:180px;" onerror="<?php echo getImageErrorHandler(); ?>">
             <?php else: ?>
-              <img src="https://via.placeholder.com/300x180?text=No+Image" class="card-img-top" alt="No Image">
+              <img src="<?php echo getPlaceholderImage(); ?>" class="card-img-top" alt="No Image">
             <?php endif; ?>
             <div class="card-body d-flex flex-column">
               <h6 class="card-title mb-1"><?php echo htmlspecialchars($report['ClassName']); ?></h6>
@@ -178,7 +179,7 @@ unset($_SESSION['profile_msg']);
               </div>
               <div class="modal-body">
                 <?php if ($report['PhotoURL']): ?>
-                  <img src="../<?php echo htmlspecialchars($report['PhotoURL']); ?>" class="img-fluid mb-3" alt="Lost Item Image">
+                  <img src="../<?php echo encodeImageUrl($report['PhotoURL']); ?>" class="img-fluid mb-3" alt="Lost Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
                 <?php endif; ?>
                 <ul class="list-group list-group-flush mb-2">
                   <li class="list-group-item"><strong>Class:</strong> <?php echo htmlspecialchars($report['ClassName']); ?></li>
@@ -212,9 +213,9 @@ unset($_SESSION['profile_msg']);
                   <div class="col-md-6 col-lg-4">
                     <div class="card h-100 shadow-sm">
                       <?php if ($report['PhotoURL']): ?>
-                        <img src="../<?php echo htmlspecialchars($report['PhotoURL']); ?>" class="card-img-top" alt="Found Item Image" style="object-fit:cover;max-height:180px;">
+                        <img src="../<?php echo encodeImageUrl($report['PhotoURL']); ?>" class="card-img-top" alt="Found Item Image" style="object-fit:cover;max-height:180px;" onerror="<?php echo getImageErrorHandler(); ?>">
                       <?php else: ?>
-                        <img src="https://via.placeholder.com/300x180?text=No+Image" class="card-img-top" alt="No Image">
+                        <img src="<?php echo getPlaceholderImage(); ?>" class="card-img-top" alt="No Image">
                       <?php endif; ?>
                       <div class="card-body d-flex flex-column">
                         <h6 class="card-title mb-1"><?php echo htmlspecialchars($report['ClassName']); ?></h6>
@@ -238,7 +239,7 @@ unset($_SESSION['profile_msg']);
                         </div>
                         <div class="modal-body">
                           <?php if ($report['PhotoURL']): ?>
-                            <img src="../<?php echo htmlspecialchars($report['PhotoURL']); ?>" class="img-fluid mb-3" alt="Found Item Image">
+                            <img src="../<?php echo encodeImageUrl($report['PhotoURL']); ?>" class="img-fluid mb-3" alt="Found Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
                           <?php endif; ?>
                           <ul class="list-group list-group-flush mb-2">
                             <li class="list-group-item"><strong>Class:</strong> <?php echo htmlspecialchars($report['ClassName']); ?></li>

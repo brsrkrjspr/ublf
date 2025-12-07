@@ -3,6 +3,8 @@ require_once __DIR__ . '/../classes/Student.php';
 require_once __DIR__ . '/../classes/ReportItem.php';
 require_once __DIR__ . '/../classes/Item.php';
 require_once __DIR__ . '/../classes/FileUpload.php';
+require_once __DIR__ . '/../includes/Config.php';
+require_once __DIR__ . '/../includes/Logger.php';
 
 session_start();
 if (!isset($_SESSION['student'])) {
@@ -14,7 +16,8 @@ if (!isset($_SESSION['student'])) {
 $student = new Student();
 $reportItem = new ReportItem();
 $item = new Item();
-$fileUpload = new FileUpload();
+// Increase max file size to 20MB (20 * 1024 * 1024 = 20971520 bytes)
+$fileUpload = new FileUpload(null, 20971520);
 
 // Fetch fresh student data (with fallback for no database)
 $studentData = null;
@@ -41,6 +44,21 @@ try {
     // Use default item classes
 }
 
+// Count approved lost items for match detection button
+$approvedCount = 0;
+try {
+    require_once __DIR__ . '/../includes/Database.php';
+    $db = new Database();
+    $conn = $db->getConnection();
+    if ($conn) {
+        $stmt = $conn->prepare('SELECT COUNT(*) FROM reportitem WHERE StudentNo = :studentNo AND StatusConfirmed = 1');
+        $stmt->execute(['studentNo' => $studentData['StudentNo']]);
+        $approvedCount = (int)$stmt->fetchColumn();
+    }
+} catch (Exception $e) {
+    // Use default count of 0
+}
+
 // Handle form submissions
 $dashboardMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -54,23 +72,164 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 function handleLostItemReport($reportItem, $fileUpload) {
-        $studentNo = $_SESSION['student']['StudentNo'];
-        $itemName = $_POST['lostItemName'] ?? '';
-        $itemClass = $_POST['lostItemClass'] ?? '';
-        $description = $_POST['lostDescription'] ?? '';
-        $dateOfLoss = $_POST['lostDate'] ?? '';
-        $lostLocation = $_POST['lostLocation'] ?? '';
+    Logger::log("=== DASHBOARD: handleLostItemReport START ===");
+    Logger::log("Session StudentNo: " . ($_SESSION['student']['StudentNo'] ?? 'NOT SET'));
     
-        $photoURL = null;
-        if (isset($_FILES['lostPhoto']) && $_FILES['lostPhoto']['error'] === UPLOAD_ERR_OK) {
-        $uploadResult = $fileUpload->uploadPhoto($_FILES['lostPhoto'], 'lost');
-        if ($uploadResult['success']) {
-            $photoURL = $uploadResult['path'];
-        } else {
-            return ['success' => false, 'message' => $uploadResult['message']];
-        }
+    $studentNo = $_SESSION['student']['StudentNo'];
+    $itemName = $_POST['lostItemName'] ?? '';
+    $itemClass = $_POST['lostItemClass'] ?? '';
+    $description = $_POST['lostDescription'] ?? '';
+    $dateOfLoss = $_POST['lostDate'] ?? '';
+    $lostLocation = $_POST['lostLocation'] ?? '';
+    
+    Logger::log("Form data extracted:");
+    Logger::log("  - itemName: $itemName");
+    Logger::log("  - itemClass: $itemClass");
+    Logger::log("  - dateOfLoss: $dateOfLoss");
+    Logger::log("  - lostLocation: $lostLocation");
+    Logger::log("  - Photo file present: " . (isset($_FILES['lostPhoto']) ? 'YES' : 'NO'));
+    
+    if (isset($_FILES['lostPhoto'])) {
+        Logger::log("Photo file details:");
+        Logger::log("  - Error code: " . $_FILES['lostPhoto']['error']);
+        Logger::log("  - Name: " . ($_FILES['lostPhoto']['name'] ?? 'N/A'));
+        Logger::log("  - Size: " . ($_FILES['lostPhoto']['size'] ?? 0) . " bytes");
+        Logger::log("  - Type: " . ($_FILES['lostPhoto']['type'] ?? 'N/A'));
     }
     
+    // Upload photo to server FIRST (before sending to n8n)
+    $photoURL = null;
+    
+    // Log PHP upload configuration for debugging
+    Logger::log("PHP upload_max_filesize: " . ini_get('upload_max_filesize'));
+    Logger::log("PHP post_max_size: " . ini_get('post_max_size'));
+    Logger::log("PHP max_file_uploads: " . ini_get('max_file_uploads'));
+    
+    if (isset($_FILES['lostPhoto'])) {
+        $fileSize = $_FILES['lostPhoto']['size'] ?? 0;
+        $errorCode = $_FILES['lostPhoto']['error'] ?? UPLOAD_ERR_NO_FILE;
+        
+        Logger::log("--- Photo upload attempt ---");
+        Logger::log("File name: " . ($_FILES['lostPhoto']['name'] ?? 'N/A'));
+        Logger::log("File size: " . $fileSize . " bytes (" . round($fileSize / 1024 / 1024, 2) . " MB)");
+        Logger::log("Error code: $errorCode");
+        
+        if ($errorCode === UPLOAD_ERR_OK) {
+            Logger::log("--- Uploading photo to server ---");
+            $uploadResult = $fileUpload->uploadPhoto($_FILES['lostPhoto'], 'lost');
+            if ($uploadResult['success']) {
+                $photoURL = $uploadResult['path'];
+                Logger::log("Photo uploaded successfully: $photoURL");
+            } else {
+                Logger::log("Photo upload failed: " . ($uploadResult['message'] ?? 'Unknown error'));
+                // Continue without photo
+            }
+        } else {
+            // Handle specific upload errors
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds PHP upload_max_filesize limit (' . ini_get('upload_max_filesize') . ')',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE directive in HTML form',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'File upload stopped by extension'
+            ];
+            $errorMsg = $errorMessages[$errorCode] ?? "Unknown upload error (code: $errorCode)";
+            Logger::log("Upload error: $errorMsg");
+            Logger::log("File size was: " . $fileSize . " bytes");
+            
+            // Continue without photo
+        }
+    } else {
+        Logger::log("No photo file uploaded (file not present in request)");
+    }
+    
+    // Get n8n webhook URL
+    $n8nWebhookUrl = Config::get('N8N_CREATE_LOST_REPORT_WEBHOOK_URL');
+    
+    if (empty($n8nWebhookUrl) || strpos($n8nWebhookUrl, 'your-n8n-instance.com') !== false) {
+        // Fallback to direct database if n8n not configured
+        Logger::log("n8n webhook not configured, using direct database");
+        Logger::log("=== DASHBOARD: handleLostItemReport END (NO N8N CONFIG) ===");
+        return $reportItem->create($studentNo, $itemName, $itemClass, $description, $dateOfLoss, $lostLocation, $photoURL);
+    }
+    
+    // Prepare JSON payload (not multipart)
+    $payload = [
+        'studentNo' => $studentNo,
+        'itemName' => $itemName,
+        'itemClass' => $itemClass,
+        'description' => $description,
+        'dateOfLoss' => $dateOfLoss,
+        'lostLocation' => $lostLocation,
+        'photoURL' => $photoURL  // String URL, not file
+    ];
+    
+    Logger::log("=== SENDING TO N8N (JSON) ===");
+    Logger::log("Payload keys: " . implode(', ', array_keys($payload)));
+    Logger::log("Photo URL: " . ($photoURL ?? 'NULL'));
+    
+    // Send to n8n webhook using JSON
+    if (!function_exists('curl_init')) {
+        Logger::log('cURL is not available. Falling back to direct database.');
+        Logger::log("=== DASHBOARD: handleLostItemReport END (NO CURL) ===");
+        return $reportItem->create($studentNo, $itemName, $itemClass, $description, $dateOfLoss, $lostLocation, $photoURL);
+    }
+    
+    $ch = curl_init($n8nWebhookUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload),  // JSON, not multipart
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],  // Set JSON header
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+    
+    Logger::log("Sending cURL request to n8n webhook...");
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+    
+    Logger::log("n8n webhook response - HTTP Code: $httpCode");
+    
+    if ($curlError) {
+        Logger::log("n8n webhook cURL error: " . $curlError);
+        // Fallback to direct database on error (photo already uploaded)
+        Logger::log("=== DASHBOARD: handleLostItemReport END (CURL ERROR FALLBACK) ===");
+        return $reportItem->create($studentNo, $itemName, $itemClass, $description, $dateOfLoss, $lostLocation, $photoURL);
+    }
+    
+    if ($httpCode !== 200) {
+        Logger::log("n8n webhook returned HTTP $httpCode. Response: " . substr($response, 0, 500));
+        // Fallback to direct database on error (photo already uploaded)
+        Logger::log("=== DASHBOARD: handleLostItemReport END (HTTP ERROR FALLBACK) ===");
+        return $reportItem->create($studentNo, $itemName, $itemClass, $description, $dateOfLoss, $lostLocation, $photoURL);
+    }
+    
+    // Parse n8n response
+    $responseData = json_decode($response, true);
+    Logger::log("n8n response parsed: " . ($responseData ? 'YES' : 'NO'));
+    if ($responseData) {
+        Logger::log("n8n response success: " . ($responseData['success'] ?? 'not set'));
+    }
+    
+    if ($responseData && isset($responseData['success'])) {
+        Logger::log("=== N8N RESPONSE RECEIVED ===");
+        Logger::log("=== DASHBOARD: handleLostItemReport END (SUCCESS via n8n) ===");
+        return [
+            'success' => $responseData['success'],
+            'message' => $responseData['message'] ?? ($responseData['success'] ? 'Lost item report submitted successfully. It will be visible to others after admin approval.' : 'Failed to submit lost item report.')
+        ];
+    }
+    
+    // If response parsing fails, fallback to direct database (photo already uploaded)
+    Logger::log("WARNING: n8n webhook returned invalid response: " . substr($response, 0, 500));
+    Logger::log("Falling back to direct database creation...");
+    Logger::log("=== DASHBOARD: handleLostItemReport END (FALLBACK to direct DB) ===");
     return $reportItem->create($studentNo, $itemName, $itemClass, $description, $dateOfLoss, $lostLocation, $photoURL);
 }
 
@@ -122,6 +281,11 @@ function handleFoundItemReport($item, $fileUpload) {
         <p class="mb-4">This is your University of Batangas Lost & Found dashboard. Browse lost and found items, report your own, and contact the admin—all in a modern, secure, and beautiful interface.</p>
         <a href="#" class="btn btn-danger btn-lg mb-3 me-2" data-bs-toggle="modal" data-bs-target="#reportLostModal"><i class="bi bi-plus-circle"></i> Report Lost Item</a>
         <a href="#" class="btn btn-success btn-lg mb-3 me-2" data-bs-toggle="modal" data-bs-target="#reportFoundModal"><i class="bi bi-plus-circle"></i> Report Found Item</a>
+        <?php if ($approvedCount > 0): ?>
+          <button id="check-matches-btn" class="btn btn-primary btn-lg mb-3 me-2">
+            <i class="bi bi-search"></i> Check for Matches (<?php echo $approvedCount; ?>)
+          </button>
+        <?php endif; ?>
         <a href="all_lost.php" class="btn btn-warning me-2"><i class="bi bi-search"></i> Browse Lost Items</a>
         <a href="found_items.php" class="btn btn-light"><i class="bi bi-box-seam"></i> Browse Found Items</a>
       </div>
@@ -597,7 +761,9 @@ function handleFoundItemReport($item, $fileUpload) {
           </div>
           <div class="mb-3">
             <label for="lostPhoto" class="form-label">Photo (optional)</label>
+            <input type="hidden" name="MAX_FILE_SIZE" value="20971520">
             <input type="file" class="form-control" id="lostPhoto" name="lostPhoto" accept="image/*">
+            <small class="form-text text-muted">Maximum file size: 20MB</small>
           </div>
         </div>
         <div class="modal-footer">
@@ -645,7 +811,9 @@ function handleFoundItemReport($item, $fileUpload) {
           </div>
           <div class="mb-3">
             <label for="foundPhoto" class="form-label">Photo (optional)</label>
+            <input type="hidden" name="MAX_FILE_SIZE" value="20971520">
             <input type="file" class="form-control" id="foundPhoto" name="foundPhoto" accept="image/*">
+            <small class="form-text text-muted">Maximum file size: 20MB</small>
           </div>
         </div>
         <div class="modal-footer">
@@ -658,5 +826,67 @@ function handleFoundItemReport($item, $fileUpload) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../assets/notifications.js"></script>
   <script src="../assets/forms.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const checkMatchesBtn = document.getElementById('check-matches-btn');
+  
+  if (checkMatchesBtn) {
+    checkMatchesBtn.addEventListener('click', function() {
+      const originalText = this.innerHTML;
+      const originalDisabled = this.disabled;
+      
+      // Disable button and show loading
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Checking...';
+      
+      // Make AJAX request to check all approved items
+      fetch('check_matches.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: '' // No report_id means check all
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Re-enable button
+        this.disabled = false;
+        this.innerHTML = originalText;
+        
+        if (data.success) {
+          const matchesCount = data.matchesFound || 0;
+          const totalChecked = data.totalChecked || 0;
+          
+          let message = `✅ Match detection completed!\n\n`;
+          message += `Checked ${totalChecked} approved lost item(s).\n\n`;
+          
+          if (matchesCount > 0) {
+            message += `Found ${matchesCount} potential match(es)!\n\n`;
+            message += `You will receive notifications and emails if matches are confirmed.`;
+          } else {
+            message += `No matches found at this time.\n\n`;
+            message += `We'll continue checking automatically when new found items are added.`;
+          }
+          
+          if (data.errors && data.errors.length > 0) {
+            message += `\n\nNote: ${data.errors.length} item(s) encountered errors.`;
+          }
+          
+          alert(message);
+        } else {
+          alert('❌ Error: ' + (data.message || 'Failed to check for matches'));
+        }
+      })
+      .catch(error => {
+        // Re-enable button
+        this.disabled = false;
+        this.innerHTML = originalText;
+        alert('❌ Error: Failed to connect to match detection service');
+        console.error('Error:', error);
+      });
+    });
+  }
+});
+</script>
 </body>
 </html> 

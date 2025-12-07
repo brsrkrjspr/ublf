@@ -41,6 +41,36 @@ function triggerApprovalWebhook($data) {
     curl_close($ch);
 }
 
+/**
+ * Helper function to trigger n8n match detection webhook
+ */
+function triggerMatchDetection($data, $type = 'found') {
+    // Determine which webhook URL to use
+    if ($type === 'found') {
+        $webhookUrl = Config::get('N8N_MATCH_DETECTION_FOUND_WEBHOOK_URL');
+    } else {
+        $webhookUrl = Config::get('N8N_MATCH_DETECTION_LOST_WEBHOOK_URL');
+    }
+    
+    if (empty($webhookUrl) || strpos($webhookUrl, 'your-n8n-instance.com') !== false) {
+        return; // Webhook not configured
+    }
+    
+    $ch = curl_init($webhookUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5); // 5 second timeout
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+    
+    // Execute asynchronously (don't wait for response)
+    curl_exec($ch);
+    curl_close($ch);
+}
+
 if ($type === 'photo' && $id) {
     // $id should be the PhotoID from profile_photo_history
     // Get photo submission info
@@ -113,8 +143,8 @@ if ($type === 'photo' && $id) {
         }
     }
 } elseif ($type === 'lost' && $id) {
-    // Get report info first
-    $stmt = $conn->prepare('SELECT r.StudentNo, r.ItemName, s.StudentName FROM reportitem r JOIN student s ON r.StudentNo = s.StudentNo WHERE r.ReportID = :id');
+    // Get report info first - include student email
+    $stmt = $conn->prepare('SELECT r.StudentNo, r.ItemName, s.StudentName, s.Email FROM reportitem r JOIN student s ON r.StudentNo = s.StudentNo WHERE r.ReportID = :id');
     $stmt->execute(['id' => $id]);
     $report = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -140,8 +170,30 @@ if ($type === 'photo' && $id) {
             'adminID' => $_SESSION['admin']['AdminID'] ?? 1,
             'studentNo' => $report['StudentNo'],
             'studentName' => $report['StudentName'] ?? '',
+            'studentEmail' => $report['Email'] ?? ($report['StudentNo'] . '@ub.edu.ph'),
+            'adminEmail' => 'foundlost004@gmail.com',
             'itemName' => $report['ItemName'] ?? ''
         ]);
+        
+        // Trigger match detection for this newly approved lost item
+        // Get full report details for match detection
+        $fullReportStmt = $conn->prepare('SELECT r.*, ic.ClassName FROM reportitem r LEFT JOIN itemclass ic ON r.ItemClassID = ic.ItemClassID WHERE r.ReportID = :id');
+        $fullReportStmt->execute(['id' => $id]);
+        $fullReport = $fullReportStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($fullReport) {
+            triggerMatchDetection([
+                'reportID' => $id,
+                'itemName' => $fullReport['ItemName'] ?? '',
+                'itemClass' => $fullReport['ClassName'] ?? '',
+                'description' => $fullReport['Description'] ?? '',
+                'lostLocation' => $fullReport['LostLocation'] ?? '',
+                'dateOfLoss' => $fullReport['DateOfLoss'] ?? '',
+                'studentNo' => $report['StudentNo'],
+                'studentName' => $report['StudentName'] ?? '',
+                'studentEmail' => $report['Email'] ?? ($report['StudentNo'] . '@ub.edu.ph')
+            ], 'lost');
+        }
     } elseif ($action === 'reject') {
         $stmt = $conn->prepare('UPDATE reportitem SET StatusConfirmed = -1, UpdatedAt = CURRENT_TIMESTAMP WHERE ReportID = :id');
         $stmt->execute(['id' => $id]);
@@ -164,6 +216,8 @@ if ($type === 'photo' && $id) {
             'adminID' => $_SESSION['admin']['AdminID'] ?? 1,
             'studentNo' => $report['StudentNo'],
             'studentName' => $report['StudentName'] ?? '',
+            'studentEmail' => $report['Email'] ?? ($report['StudentNo'] . '@ub.edu.ph'),
+            'adminEmail' => 'foundlost004@gmail.com',
             'itemName' => $report['ItemName'] ?? ''
         ]);
     }
@@ -188,6 +242,23 @@ if ($type === 'photo' && $id) {
             'itemName' => $item['ItemName'] ?? '',
             'description' => $item['Description'] ?? ''
         ]);
+        
+        // Trigger match detection for this newly approved found item
+        // Get full item details for match detection
+        $fullItemStmt = $conn->prepare('SELECT i.*, ic.ClassName FROM item i LEFT JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID WHERE i.ItemID = :id');
+        $fullItemStmt->execute(['id' => $id]);
+        $fullItem = $fullItemStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($fullItem) {
+            triggerMatchDetection([
+                'itemID' => $id,
+                'itemName' => $fullItem['ItemName'] ?? '',
+                'itemClass' => $fullItem['ClassName'] ?? '',
+                'description' => $fullItem['Description'] ?? '',
+                'location' => $fullItem['LocationFound'] ?? $fullItem['Location'] ?? '',
+                'dateFound' => $fullItem['DateFound'] ?? ''
+            ], 'found');
+        }
     } elseif ($action === 'reject') {
         $stmt = $conn->prepare('UPDATE item SET StatusConfirmed = -1, UpdatedAt = CURRENT_TIMESTAMP WHERE ItemID = :id');
         $stmt->execute(['id' => $id]);

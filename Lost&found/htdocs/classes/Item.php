@@ -134,14 +134,24 @@ class Item {
     }
 
     public function getItemClasses() {
+        if (!$this->conn) {
+            // Return default item classes
+            return ['Electronics', 'Books', 'Clothing', 'Bags', 'ID Cards', 'Keys', 'Others'];
+        }
+        // Get ALL classes from itemclass table, not just ones with approved items
         $query = "SELECT DISTINCT ic.ClassName 
                   FROM itemclass ic 
-                  JOIN {$this->table} i ON ic.ItemClassID = i.ItemClassID 
-                  WHERE i.StatusConfirmed = 1 
                   ORDER BY ic.ClassName";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $classes = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        // If no classes in database, return defaults
+        if (empty($classes)) {
+            return ['Electronics', 'Books', 'Clothing', 'Bags', 'ID Cards', 'Keys', 'Others'];
+        }
+        
+        return $classes;
     }
 
     public function findMatches($lostItemName, $lostItemClass = null) {

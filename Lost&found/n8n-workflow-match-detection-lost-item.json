@@ -1,0 +1,308 @@
+{
+  "name": "UB Lost & Found - AI Match Detection (Lost Item Approved)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lost-item-approved",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "lost-item-approved"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input from webhook - data is in body property\nconst input = $input.first().json || $input.first() || {};\nconst webhookData = input.body || input.json || input || {};\n\n// Extract lost item details\nconst reportID = webhookData.reportID || webhookData.ReportID || input.reportID || input.ReportID || '';\nconst itemName = webhookData.itemName || webhookData.ItemName || input.itemName || input.ItemName || '';\nconst itemClass = webhookData.itemClass || webhookData.ItemClass || webhookData.ClassName || input.itemClass || input.ItemClass || input.ClassName || '';\nconst description = webhookData.description || webhookData.Description || input.description || input.Description || '';\nconst lostLocation = webhookData.lostLocation || webhookData.LostLocation || input.lostLocation || input.LostLocation || '';\nconst dateOfLoss = webhookData.dateOfLoss || webhookData.DateOfLoss || input.dateOfLoss || input.DateOfLoss || '';\nconst studentNo = webhookData.studentNo || webhookData.StudentNo || input.studentNo || input.StudentNo || '';\nconst studentName = webhookData.studentName || webhookData.StudentName || input.studentName || input.StudentName || '';\nconst studentEmail = webhookData.studentEmail || webhookData.Email || input.studentEmail || input.Email || (studentNo ? `${studentNo}@ub.edu.ph` : '');\n\nreturn [{\n  json: {\n    reportID: reportID,\n    itemName: itemName,\n    itemClass: itemClass,\n    description: description,\n    lostLocation: lostLocation,\n    dateOfLoss: dateOfLoss,\n    studentNo: studentNo,\n    studentName: studentName,\n    studentEmail: studentEmail,\n    originalData: webhookData\n  }\n}];"
+      },
+      "id": "extract-lost-item",
+      "name": "Extract Lost Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://ublf.x10.mx/api/v1/items",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-found-items",
+      "name": "Get All Found Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lostItem = $('Extract Lost Item').first().json;\nconst foundItemsResponse = $('Get All Found Items').first().json;\nconst foundItems = foundItemsResponse.data || foundItemsResponse || [];\n\n// Filter: Only approved found items (StatusConfirmed = \"1\" or 1)\nconst approvedFoundItems = foundItems.filter(item =>\n  (item.StatusConfirmed === \"1\" || item.StatusConfirmed === 1) &&\n  (item.StatusConfirmed !== \"-1\" && item.StatusConfirmed !== -1)\n);\n\n// Limit to recent items (last 100) to avoid too many API calls\nconst recentFoundItems = approvedFoundItems.slice(0, 100);\n\n// Format lost item for AI\nconst lostItemText = `Lost Item:\n- Name: ${lostItem.itemName || 'Unknown'}\n- Class: ${lostItem.itemClass || 'Unknown'}\n- Description: ${lostItem.description || 'No description'}\n- Location Lost: ${lostItem.lostLocation || 'Unknown'}\n- Date Lost: ${lostItem.dateOfLoss || 'Unknown'}\n- Student: ${lostItem.studentName || 'Unknown'} (${lostItem.studentNo || 'Unknown'})`;\n\n// Format found items for AI\nconst foundItemsText = recentFoundItems.map((item, index) => {\n  return `Found Item ${index + 1}:\n- Name: ${item.ItemName || item.itemName || 'Unknown'}\n- Class: ${item.ClassName || item.itemClass || 'Unknown'}\n- Description: ${item.Description || item.description || 'No description'}\n- Location Found: ${item.LocationFound || item.locationFound || item.Location || item.location || 'Unknown'}\n- Date Found: ${item.DateFound || item.dateFound || 'Unknown'}`;\n}).join('\\n\\n');\n\nreturn [{\n  json: {\n    lostItem: lostItem,\n    lostItemText: lostItemText,\n    foundItems: recentFoundItems,\n    foundItemsText: foundItemsText,\n    totalFoundItems: recentFoundItems.length\n  }\n}];"
+      },
+      "id": "prepare-ai-comparison",
+      "name": "Prepare AI Comparison",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 2000
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert at matching lost and found items. Your task is to analyze a lost item and compare it with multiple found items to identify potential matches. Consider item names (including variations, abbreviations, and similar-sounding names), item classes/categories, descriptions, locations, and dates. Return a JSON array of matches with confidence scores."
+            },
+            {
+              "role": "user",
+              "content": "=Analyze the following lost item and compare it with the found items below. Identify all potential matches and return a JSON array with this exact format:\n\n[\n  {\n    \"index\": 0,\n    \"isMatch\": true,\n    \"confidence\": 85,\n    \"reasoning\": \"Item names are very similar, same class, and descriptions match\"\n  },\n  {\n    \"index\": 1,\n    \"isMatch\": false,\n    \"confidence\": 0,\n    \"reasoning\": \"Different item classes and names don't match\"\n  }\n]\n\nOnly include items where isMatch is true and confidence is 60 or higher.\n\n{{ $json.lostItemText }}\n\n---\n\nFound Items to Compare:\n\n{{ $json.foundItemsText }}\n\nReturn ONLY valid JSON array, no other text."
+            }
+          ]
+        }
+      },
+      "id": "ai-match-analysis",
+      "name": "AI Match Analysis",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = $input.first().json;\nconst preparedData = $('Prepare AI Comparison').first().json;\nconst lostItem = preparedData.lostItem;\nconst foundItems = preparedData.foundItems;\n\n// Extract AI response - handle different formats\nlet aiMatches = [];\nlet aiContent = '';\n\nif (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n  aiContent = aiResponse.choices[0].message.content;\n} else if (aiResponse.message && aiResponse.message.content) {\n  aiContent = aiResponse.message.content;\n} else if (aiResponse.content) {\n  aiContent = aiResponse.content;\n} else if (aiResponse.output) {\n  aiContent = aiResponse.output;\n} else if (typeof aiResponse === 'string') {\n  aiContent = aiResponse;\n}\n\n// Clean and parse AI response\naiContent = aiContent.trim();\n// Remove markdown code blocks if present\naiContent = aiContent.replace(/```json\\n?/g, '');\naiContent = aiContent.replace(/```\\n?/g, '');\naiContent = aiContent.replace(/^\\s*\\[\\s*/s, '[');\naiContent = aiContent.replace(/\\s*\\]\\s*$/s, ']');\n\ntry {\n  aiMatches = JSON.parse(aiContent);\n  if (!Array.isArray(aiMatches)) {\n    aiMatches = [];\n  }\n} catch (e) {\n  // If parsing fails, try to extract JSON from text\n  const jsonMatch = aiContent.match(/\\[[\\s\\S]*\\]/);\n  if (jsonMatch) {\n    try {\n      aiMatches = JSON.parse(jsonMatch[0]);\n    } catch (e2) {\n      aiMatches = [];\n    }\n  }\n}\n\n// Process matches and create notification data\nconst notifications = [];\n\nfor (const match of aiMatches) {\n  if (match.isMatch && match.confidence >= 60 && match.index !== undefined) {\n    const foundItem = foundItems[match.index];\n    if (foundItem) {\n      notifications.push({\n        json: {\n          studentNo: lostItem.studentNo || '',\n          studentName: lostItem.studentName || 'Student',\n          studentEmail: lostItem.studentEmail || (lostItem.studentNo ? `${lostItem.studentNo}@ub.edu.ph` : ''),\n          lostItemName: lostItem.itemName || 'Unknown',\n          lostItemID: lostItem.reportID || '',\n          lostItemClass: lostItem.itemClass || '',\n          lostItemDescription: lostItem.description || '',\n          foundItemName: foundItem.ItemName || foundItem.itemName || 'Unknown',\n          foundItemID: foundItem.ItemID || foundItem.itemID || '',\n          foundItemClass: foundItem.ClassName || foundItem.itemClass || '',\n          foundItemDescription: foundItem.Description || foundItem.description || '',\n          matchConfidence: match.confidence,\n          matchReasoning: match.reasoning || 'AI determined this is a potential match',\n          timestamp: new Date().toISOString()\n        }\n      });\n    }\n  }\n}\n\nreturn notifications.length > 0 ? notifications : [{\n  json: {\n    noMatches: true,\n    message: 'No matches found with confidence >= 60%',\n    totalAnalyzed: foundItems.length,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "process-ai-matches",
+      "name": "Process AI Matches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-matches",
+              "leftValue": "={{ $json.noMatches !== true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-has-matches",
+      "name": "Check Has Matches",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://ublf.x10.mx/api/v1/webhooks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"create_notification\",\n  \"studentNo\": \"{{ $json.studentNo }}\",\n  \"type\": \"item_matched\",\n  \"title\": \"Potential Match Found!\",\n  \"message\": \"AI found a potential match for your lost '{{ $json.lostItemName }}'. Confidence: {{ $json.matchConfidence }}%. {{ $json.matchReasoning }}\",\n  \"relatedID\": \"{{ $json.foundItemID }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "create-notification",
+      "name": "Create Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1650, 150]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "fromEmail": "foundlost004@gmail.com",
+        "toEmail": "={{ $json.studentEmail }}",
+        "subject": "={{ 'Potential Match Found for Your Lost Item: ' + $json.lostItemName }}",
+        "emailType": "html",
+        "html": "=<h2>🎯 Potential Match Found!</h2><p>Hello {{ $json.studentName || 'Student' }},</p><p>Our AI system has identified a potential match for your lost item:</p><div style='background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;'><p><strong>Your Lost Item:</strong> {{ $json.lostItemName }}</p><p><strong>Class:</strong> {{ $json.lostItemClass }}</p>{{ $json.lostItemDescription ? `<p><strong>Description:</strong> ${$json.lostItemDescription}</p>` : '' }}</div><div style='background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 15px 0;'><p><strong>Found Item:</strong> {{ $json.foundItemName }}</p><p><strong>Class:</strong> {{ $json.foundItemClass }}</p>{{ $json.foundItemDescription ? `<p><strong>Description:</strong> ${$json.foundItemDescription}</p>` : '' }}</div><p><strong>Match Confidence:</strong> {{ $json.matchConfidence }}%</p><p><strong>AI Reasoning:</strong> {{ $json.matchReasoning }}</p><p>Please check your dashboard to view the details and contact the finder if this matches your lost item.</p><p>Best regards,<br>UB Lost & Found Team</p>",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1850, 150],
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": ""
+        }
+      },
+      "notes": "Configure SMTP credential in the UI. Select your SMTP account from the credential dropdown."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://ublf.x10.mx/api/v1/webhooks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"create_notification\",\n  \"studentNo\": \"{{ $('Extract Lost Item').first().json.studentNo || '' }}\",\n  \"type\": \"system_alert\",\n  \"title\": \"No Matches Found\",\n  \"message\": \"={{ 'No matches found for your lost item at this time. We analyzed ' + ($json.totalAnalyzed || 0) + ' found item(s). We\\'ll continue checking automatically when new found items are added.' }}\",\n  \"relatedID\": \"{{ $('Extract Lost Item').first().json.reportID || null }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "create-notification2",
+      "name": "Create Notification2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lostItem = $('Extract Lost Item').first().json;\nconst aiMatches = $('Process AI Matches').all();\nconst matchCount = aiMatches.filter(m => m.json.noMatches !== true).length;\n\nreturn [{\n  json: {\n    success: true,\n    message: `AI match detection completed. Found ${matchCount} potential match(es) for lost item '${lostItem.itemName}'`,\n    lostItemID: lostItem.reportID,\n    lostItemName: lostItem.itemName,\n    matchesFound: matchCount,\n    notificationsSent: matchCount,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "send-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.first().json.error;\nreturn [{\n  json: {\n    success: false,\n    error: error?.message || error?.error || 'Unknown error',\n    message: 'AI match detection failed'\n  }\n}];"
+      },
+      "id": "error-handler",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Extract Lost Item", "type": "main", "index": 0}]]
+    },
+    "Extract Lost Item": {
+      "main": [[{"node": "Get All Found Items", "type": "main", "index": 0}]]
+    },
+    "Get All Found Items": {
+      "main": [[{"node": "Prepare AI Comparison", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Prepare AI Comparison": {
+      "main": [[{"node": "AI Match Analysis", "type": "main", "index": 0}]]
+    },
+    "AI Match Analysis": {
+      "main": [[{"node": "Process AI Matches", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Process AI Matches": {
+      "main": [[{"node": "Check Has Matches", "type": "main", "index": 0}]]
+    },
+    "Check Has Matches": {
+      "main": [
+        [{"node": "Create Notification", "type": "main", "index": 0}],
+        [{"node": "Create Notification2", "type": "main", "index": 0}]
+      ]
+    },
+    "Create Notification": {
+      "main": [[{"node": "Send Email Notification", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Create Notification2": {
+      "main": [[{"node": "Format Response", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Send Email Notification": {
+      "main": [[{"node": "Format Response", "type": "main", "index": 0}]],
+      "error": [[{"node": "Error Handler", "type": "main", "index": 0}]]
+    },
+    "Format Response": {
+      "main": [[{"node": "Send Response", "type": "main", "index": 0}]]
+    },
+    "Error Handler": {
+      "main": [[{"node": "Send Response", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

@@ -3,6 +3,7 @@ require_once __DIR__ . '/../classes/Admin.php';
 require_once __DIR__ . '/../classes/Student.php';
 require_once __DIR__ . '/../classes/ReportItem.php';
 require_once __DIR__ . '/../classes/Item.php';
+require_once __DIR__ . '/../includes/ImageHelper.php';
 
 session_start();
 if (!isset($_SESSION['admin'])) {
@@ -11,6 +12,7 @@ if (!isset($_SESSION['admin'])) {
 }
 
 require_once __DIR__ . '/../includes/Database.php';
+require_once __DIR__ . '/../classes/Notification.php';
 $db = new Database();
 $conn = $db->getConnection();
 
@@ -19,6 +21,7 @@ $admin = new Admin();
 $student = new Student();
 $reportItem = new ReportItem();
 $item = new Item();
+$notification = new Notification($conn);
 
 // Get dashboard statistics (with fallback for no database)
 $stats = ['pendingPhotoApprovals' => 0, 'pendingLostApprovals' => 0, 'pendingFoundApprovals' => 0];
@@ -265,20 +268,81 @@ if ($section === 'students') {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['deactivate_student'])) {
       $id = $_POST['student_no'] ?? '';
-      $stmt = $conn->prepare('UPDATE student SET Active = 0 WHERE StudentNo = :id');
-      $stmt->execute(['id' => $id]);
-      $studentMsg = '<div class="alert alert-warning">Student deactivated.</div>';
+      try {
+        // Check if Active column exists
+        $checkColumn = $conn->query("SHOW COLUMNS FROM student LIKE 'Active'");
+        if ($checkColumn->rowCount() > 0) {
+          $stmt = $conn->prepare('UPDATE student SET Active = 0 WHERE StudentNo = :id');
+          $stmt->execute(['id' => $id]);
+          $studentMsg = '<div class="alert alert-warning">Student deactivated.</div>';
+        } else {
+          $studentMsg = '<div class="alert alert-info">Deactivation feature not available. Use delete instead.</div>';
+        }
+      } catch (Exception $e) {
+        $studentMsg = '<div class="alert alert-danger">Failed to deactivate student: ' . htmlspecialchars($e->getMessage()) . '</div>';
+      }
     } elseif (isset($_POST['reactivate_student'])) {
       $id = $_POST['student_no'] ?? '';
-      $stmt = $conn->prepare('UPDATE student SET Active = 1 WHERE StudentNo = :id');
-      $stmt->execute(['id' => $id]);
-      $studentMsg = '<div class="alert alert-success">Student reactivated.</div>';
+      try {
+        // Check if Active column exists
+        $checkColumn = $conn->query("SHOW COLUMNS FROM student LIKE 'Active'");
+        if ($checkColumn->rowCount() > 0) {
+          $stmt = $conn->prepare('UPDATE student SET Active = 1 WHERE StudentNo = :id');
+          $stmt->execute(['id' => $id]);
+          $studentMsg = '<div class="alert alert-success">Student reactivated.</div>';
+        } else {
+          $studentMsg = '<div class="alert alert-info">Reactivation feature not available.</div>';
+        }
+      } catch (Exception $e) {
+        $studentMsg = '<div class="alert alert-danger">Failed to reactivate student: ' . htmlspecialchars($e->getMessage()) . '</div>';
+      }
     } elseif (isset($_POST['delete_student'])) {
       $id = $_POST['student_no'] ?? '';
-      $stmt = $conn->prepare('DELETE FROM student WHERE StudentNo = :id');
-      $stmt->execute(['id' => $id]);
-      $studentMsg = '<div class="alert alert-danger">Student deleted.</div>';
+      try {
+        // Check if student has related data that would prevent deletion
+        $checkReports = $conn->prepare('SELECT COUNT(*) FROM reportitem WHERE StudentNo = :id');
+        $checkReports->execute(['id' => $id]);
+        $reportCount = $checkReports->fetchColumn();
+        
+        if ($reportCount > 0) {
+          // Delete related reports first (cascade manually)
+          $deleteReports = $conn->prepare('DELETE FROM reportitem WHERE StudentNo = :id');
+          $deleteReports->execute(['id' => $id]);
+        }
+        
+        // Delete related notifications (should cascade automatically, but doing it manually for safety)
+        $deleteNotifications = $conn->prepare('DELETE FROM notifications WHERE StudentNo = :id');
+        $deleteNotifications->execute(['id' => $id]);
+        
+        // Delete related profile photo history (should cascade automatically, but doing it manually for safety)
+        $deletePhotos = $conn->prepare('DELETE FROM profile_photo_history WHERE StudentNo = :id');
+        $deletePhotos->execute(['id' => $id]);
+        
+        // Now delete the student
+        $stmt = $conn->prepare('DELETE FROM student WHERE StudentNo = :id');
+        $stmt->execute(['id' => $id]);
+        
+        if ($stmt->rowCount() > 0) {
+          $studentMsg = '<div class="alert alert-success">Student deleted successfully. ' . ($reportCount > 0 ? "Also deleted {$reportCount} related report(s)." : '') . '</div>';
+        } else {
+          $studentMsg = '<div class="alert alert-warning">Student not found or already deleted.</div>';
+        }
+      } catch (PDOException $e) {
+        $errorCode = $e->getCode();
+        if ($errorCode == 23000) { // Foreign key constraint violation
+          $studentMsg = '<div class="alert alert-danger">Cannot delete student: They have related data that cannot be automatically removed. Please contact a database administrator.</div>';
+        } else {
+          $studentMsg = '<div class="alert alert-danger">Failed to delete student: ' . htmlspecialchars($e->getMessage()) . '</div>';
+        }
+      } catch (Exception $e) {
+        $studentMsg = '<div class="alert alert-danger">Failed to delete student: ' . htmlspecialchars($e->getMessage()) . '</div>';
+      }
     }
+    // Refresh the student list after action
+    $where = $search ? 'WHERE StudentName LIKE :search OR StudentNo LIKE :search OR Email LIKE :search' : '';
+    $stmt = $conn->prepare('SELECT * FROM student ' . $where . ' ORDER BY StudentNo');
+    if ($search) $stmt->execute(['search' => "%$search%"]); else $stmt->execute();
+    $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 }
 if ($section === 'export') {
@@ -343,6 +407,7 @@ if ($section === 'export') {
       <div class="admin-sidebar">
         <a href="admin_dashboard.php?section=pending" class="<?php echo sidebar_active('pending', $section); ?>">Pending</a>
         <a href="admin_dashboard.php?section=completed" class="<?php echo sidebar_active('completed', $section); ?>">Completed</a>
+        <a href="admin_dashboard.php?section=notifications" class="<?php echo sidebar_active('notifications', $section); ?>">Notifications</a>
         <a href="admin_dashboard.php?section=analytics" class="<?php echo sidebar_active('analytics', $section); ?>">Analytics</a>
         <a href="admin_dashboard.php?section=adminmgmt" class="<?php echo sidebar_active('adminmgmt', $section); ?>">Admin Management</a>
         <a href="admin_dashboard.php?section=itemmgmt" class="<?php echo sidebar_active('itemmgmt', $section); ?>">Item Management</a>
@@ -391,7 +456,7 @@ if ($section === 'export') {
                   <tr>
                     <td><?php echo htmlspecialchars($row['StudentName'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($row['Email'] ?? ''); ?></td>
-                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo htmlspecialchars($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #800000;"><?php else: ?><i class="bi bi-person-circle" style="font-size:2rem;color:#FFD700;"></i><?php endif; ?></td>
+                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo encodeImageUrl($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #800000;" onerror="<?php echo getImageErrorHandler(); ?>"><?php else: ?><i class="bi bi-person-circle" style="font-size:2rem;color:#FFD700;"></i><?php endif; ?></td>
                     <td><?php echo htmlspecialchars($row['SubmittedAt'] ?? ''); ?></td>
                     <td class="d-flex gap-2">
                       <form method="POST" action="admin_action.php">
@@ -424,7 +489,7 @@ if ($section === 'export') {
                   <tr>
                     <td><?php echo htmlspecialchars($row['ItemName'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($row['Description'] ?? ''); ?></td>
-                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo htmlspecialchars($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;object-fit:cover;"><?php endif; ?></td>
+                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo encodeImageUrl($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;object-fit:cover;" onerror="<?php echo getImageErrorHandler(); ?>"><?php endif; ?></td>
                     <td><?php echo htmlspecialchars($row['StudentNo'] ?? ''); ?></td>
                     <td>
                       <form method="POST" action="admin_action.php" style="display:inline">
@@ -454,7 +519,7 @@ if ($section === 'export') {
                   <tr>
                     <td><?php echo htmlspecialchars($row['ItemName'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($row['Description'] ?? ''); ?></td>
-                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo htmlspecialchars($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;object-fit:cover;"><?php endif; ?></td>
+                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo encodeImageUrl($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;object-fit:cover;" onerror="<?php echo getImageErrorHandler(); ?>"><?php endif; ?></td>
                     <td>
                       <form method="POST" action="admin_action.php" style="display:inline">
                         <input type="hidden" name="type" value="found">
@@ -489,7 +554,7 @@ if ($section === 'export') {
                   <tr>
                     <td><?php echo htmlspecialchars($row['StudentName'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($row['Email'] ?? ''); ?></td>
-                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo htmlspecialchars($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;border-radius:50%;object-fit:cover;"><?php endif; ?></td>
+                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo encodeImageUrl($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" onerror="<?php echo getImageErrorHandler(); ?>"><?php endif; ?></td>
                     <td>
                       <?php if (($row['Status'] ?? null) == 1): ?>
                         <span class="badge bg-success badge-status">Approved</span>
@@ -515,7 +580,7 @@ if ($section === 'export') {
                   <tr>
                     <td><?php echo htmlspecialchars($row['ItemName'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($row['Description'] ?? ''); ?></td>
-                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo htmlspecialchars($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;object-fit:cover;"><?php endif; ?></td>
+                    <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo encodeImageUrl($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;object-fit:cover;" onerror="<?php echo getImageErrorHandler(); ?>"><?php endif; ?></td>
                     <td><?php echo htmlspecialchars($row['StudentNo'] ?? ''); ?></td>
                     <td>
                       <?php if (($row['StatusConfirmed'] ?? null) == 1): ?>
@@ -542,7 +607,7 @@ if ($section === 'export') {
                 <tr>
                   <td><?php echo htmlspecialchars($row['ItemName'] ?? ''); ?></td>
                   <td><?php echo htmlspecialchars($row['Description'] ?? ''); ?></td>
-                  <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo htmlspecialchars($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;object-fit:cover;"><?php endif; ?></td>
+                  <td><?php if (!empty($row['PhotoURL'])): ?><img src="../<?php echo encodeImageUrl($row['PhotoURL']); ?>" alt="Photo" style="width:40px;height:40px;object-fit:cover;" onerror="<?php echo getImageErrorHandler(); ?>"><?php endif; ?></td>
                   <td>
                     <?php if (($row['StatusConfirmed'] ?? null) == 1): ?>
                       <span class="badge bg-success badge-status">Approved</span>
@@ -834,21 +899,33 @@ if ($section === 'export') {
                       <td><?php echo htmlspecialchars($stu['Email']); ?></td>
                       <td><?php echo htmlspecialchars($stu['PhoneNo']); ?></td>
                       <td>
-                        <?php echo (isset($stu['Active']) && $stu['Active'] == 0) ? '<span class="badge bg-danger">Inactive</span>' : '<span class="badge bg-success">Active</span>'; ?>
+                        <?php 
+                        // Check if Active column exists and show status
+                        if (isset($stu['Active'])) {
+                          echo ($stu['Active'] == 0) ? '<span class="badge bg-danger">Inactive</span>' : '<span class="badge bg-success">Active</span>';
+                        } else {
+                          echo '<span class="badge bg-success">Active</span>';
+                        }
+                        ?>
                       </td>
                       <td>
-                        <?php if (isset($stu['Active']) && $stu['Active'] == 0): ?>
-                          <form method="POST" style="display:inline">
-                            <input type="hidden" name="student_no" value="<?php echo $stu['StudentNo']; ?>">
-                            <button type="submit" name="reactivate_student" class="btn btn-success btn-sm">Reactivate</button>
-                          </form>
-                        <?php else: ?>
-                          <form method="POST" style="display:inline">
-                            <input type="hidden" name="student_no" value="<?php echo $stu['StudentNo']; ?>">
-                            <button type="submit" name="deactivate_student" class="btn btn-warning btn-sm">Deactivate</button>
-                          </form>
-                        <?php endif; ?>
-                        <form method="POST" style="display:inline" onsubmit="return confirm('Delete this student?');">
+                        <?php 
+                        // Show deactivate/reactivate only if Active column exists
+                        if (isset($stu['Active'])) {
+                          if ($stu['Active'] == 0): ?>
+                            <form method="POST" style="display:inline">
+                              <input type="hidden" name="student_no" value="<?php echo $stu['StudentNo']; ?>">
+                              <button type="submit" name="reactivate_student" class="btn btn-success btn-sm">Reactivate</button>
+                            </form>
+                          <?php else: ?>
+                            <form method="POST" style="display:inline">
+                              <input type="hidden" name="student_no" value="<?php echo $stu['StudentNo']; ?>">
+                              <button type="submit" name="deactivate_student" class="btn btn-warning btn-sm">Deactivate</button>
+                            </form>
+                          <?php endif;
+                        }
+                        ?>
+                        <form method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this student account? This will also delete all their reports, notifications, and profile photo history. This action cannot be undone.');">
                           <input type="hidden" name="student_no" value="<?php echo $stu['StudentNo']; ?>">
                           <button type="submit" name="delete_student" class="btn btn-danger btn-sm">Delete</button>
                         </form>
@@ -980,6 +1057,164 @@ if ($section === 'export') {
           setInterval(loadAnalytics, 60000);
         })();
         </script>
+      <?php elseif ($section === 'notifications'): ?>
+        <!-- Notifications Section -->
+        <?php
+        // Get filter type
+        $filterType = $_GET['type'] ?? 'all';
+        $notifications = [];
+        $matchNotifications = [];
+        $totalCount = 0;
+        $matchCount = 0;
+        
+        if ($conn) {
+          try {
+            // Get all notifications with student info
+            if ($filterType === 'matches') {
+              $stmt = $conn->prepare('
+                SELECT n.*, s.StudentName, s.Email 
+                FROM notifications n 
+                JOIN student s ON n.StudentNo = s.StudentNo 
+                WHERE n.Type = "item_matched"
+                ORDER BY n.CreatedAt DESC 
+                LIMIT 100
+              ');
+              $stmt->execute();
+              $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+              $matchCount = count($notifications);
+            } else {
+              $stmt = $conn->prepare('
+                SELECT n.*, s.StudentName, s.Email 
+                FROM notifications n 
+                JOIN student s ON n.StudentNo = s.StudentNo 
+                ORDER BY n.CreatedAt DESC 
+                LIMIT 200
+              ');
+              $stmt->execute();
+              $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+              $totalCount = count($notifications);
+              
+              // Separate match notifications
+              $matchNotifications = array_filter($notifications, function($n) {
+                return $n['Type'] === 'item_matched';
+              });
+              $matchCount = count($matchNotifications);
+            }
+          } catch (Exception $e) {
+            $notifications = [];
+          }
+        }
+        ?>
+        <div class="container mb-5">
+          <div class="admin-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h3 class="mb-0">System Notifications</h3>
+              <div class="btn-group" role="group">
+                <a href="admin_dashboard.php?section=notifications&type=all" 
+                   class="btn btn-sm <?php echo $filterType === 'all' ? 'btn-primary' : 'btn-outline-primary'; ?>">
+                  All (<?php echo $totalCount; ?>)
+                </a>
+                <a href="admin_dashboard.php?section=notifications&type=matches" 
+                   class="btn btn-sm <?php echo $filterType === 'matches' ? 'btn-success' : 'btn-outline-success'; ?>">
+                  Matches (<?php echo $matchCount; ?>)
+                </a>
+              </div>
+            </div>
+            
+            <?php if ($filterType === 'all' && $matchCount > 0): ?>
+              <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong><?php echo $matchCount; ?> match detection notification(s)</strong> found. 
+                <a href="admin_dashboard.php?section=notifications&type=matches" class="alert-link">View matches only</a>
+              </div>
+            <?php endif; ?>
+            
+            <?php if (empty($notifications)): ?>
+              <div class="text-center py-5">
+                <i class="bi bi-bell-slash" style="font-size: 3rem; color: #ccc;"></i>
+                <p class="text-muted mt-3">No notifications found.</p>
+              </div>
+            <?php else: ?>
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Student</th>
+                      <th>Title</th>
+                      <th>Message</th>
+                      <th>Status</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($notifications as $notif): ?>
+                      <tr class="<?php echo $notif['IsRead'] == 0 ? 'table-warning' : ''; ?>">
+                        <td>
+                          <span class="badge bg-<?php 
+                            echo $notif['Type'] === 'item_matched' ? 'success' : 
+                                ($notif['Type'] === 'report_approved' ? 'primary' : 
+                                ($notif['Type'] === 'report_rejected' ? 'danger' : 'secondary')); 
+                          ?>">
+                            <?php 
+                              echo $notif['Type'] === 'item_matched' ? '🎯 Match' : 
+                                  ($notif['Type'] === 'report_approved' ? '✓ Approved' : 
+                                  ($notif['Type'] === 'report_rejected' ? '✗ Rejected' : 
+                                  ucfirst(str_replace('_', ' ', $notif['Type'])))); 
+                            ?>
+                          </span>
+                        </td>
+                        <td>
+                          <div><?php echo htmlspecialchars($notif['StudentName'] ?? 'Unknown'); ?></div>
+                          <small class="text-muted"><?php echo htmlspecialchars($notif['StudentNo'] ?? ''); ?></small>
+                        </td>
+                        <td><?php echo htmlspecialchars($notif['Title']); ?></td>
+                        <td>
+                          <div style="max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <?php echo htmlspecialchars($notif['Message']); ?>
+                          </div>
+                        </td>
+                        <td>
+                          <?php if ($notif['IsRead'] == 0): ?>
+                            <span class="badge bg-warning">Unread</span>
+                          <?php else: ?>
+                            <span class="badge bg-secondary">Read</span>
+                          <?php endif; ?>
+                        </td>
+                        <td>
+                          <small class="text-muted">
+                            <?php 
+                              $time = strtotime($notif['CreatedAt']);
+                              $now = time();
+                              $diff = $now - $time;
+                              if ($diff < 3600) {
+                                echo floor($diff / 60) . 'm ago';
+                              } elseif ($diff < 86400) {
+                                echo floor($diff / 3600) . 'h ago';
+                              } else {
+                                echo date('M j, Y', $time);
+                              }
+                            ?>
+                          </small>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+              
+              <?php if ($filterType === 'matches'): ?>
+                <div class="mt-4 p-3 bg-light rounded">
+                  <h5><i class="bi bi-info-circle me-2"></i>About Match Detection</h5>
+                  <p class="mb-0">
+                    These notifications are automatically created when the AI match detection workflow finds potential matches 
+                    between lost and found items. Students receive these notifications via email and in their dashboard.
+                  </p>
+                </div>
+              <?php endif; ?>
+            <?php endif; ?>
+          </div>
+        </div>
       <?php elseif ($section === 'export'): ?>
         <!-- Data Export Tab -->
         <div class="container mb-5">
