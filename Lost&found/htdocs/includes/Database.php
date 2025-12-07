@@ -1,9 +1,9 @@
 <?php
 class Database {
-    private $host = '127.0.0.1';
-    private $db_name = 'ub_lost_found';
-    private $username = 'root';
-    private $password = 'besmar012';
+    private $host = 'localhost';
+    private $db_name = 'gcrajoqq_ublf';
+    private $username = 'gcrajoqq_ublf';
+    private $password = 'ublf12345';
     private $conn;
 
     public function getConnection() {

@@ -3,18 +3,19 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
+        "triggerTimes": {
+          "item": [
             {
-              "field": "cronExpression",
-              "expression": "0 2 * * *"
+              "mode": "everyDay",
+              "hour": 2,
+              "minute": 0
             }
           ]
         }
       },
-      "id": "cron-trigger",
-      "name": "Cron Trigger",
-      "type": "n8n-nodes-base.cron",
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [250, 300],
       "notes": "Runs daily at 2 AM"
@@ -32,14 +33,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=http://localhost/api/v1/webhooks",
+        "url": "=https://ublf.x10.mx/api/v1/webhooks",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "your-secret-api-key-change-this"
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
             }
           ]
         },
@@ -101,7 +102,7 @@
     }
   ],
   "connections": {
-    "Cron Trigger": {
+    "Schedule Trigger": {
       "main": [[{"node": "Prepare Cleanup", "type": "main", "index": 0}]]
     },
     "Prepare Cleanup": {
@@ -129,4 +130,3 @@
   "updatedAt": "2024-01-01T00:00:00.000Z",
   "versionId": "1"
 }
-

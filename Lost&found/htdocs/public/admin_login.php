@@ -27,7 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Login - UB Lost & Found</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="../assets/ub.css" rel="stylesheet">
+  <?php
+  $ubCssFile = file_exists(__DIR__ . '/../assets/UB.css') ? 'UB.css' : 'ub.css';
+  ?>
+  <link href="css.php?file=<?php echo urlencode($ubCssFile); ?>" rel="stylesheet">
   <style>
     body { background: #faf9f6; }
     .login-card { max-width: 400px; margin: 80px auto; border-radius: 1.25rem; box-shadow: 0 4px 16px rgba(128,0,0,0.08); border: none; }

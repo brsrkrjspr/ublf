@@ -17,7 +17,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get input from webhook\nconst input = $input.first().json;\nconst message = input.message.toLowerCase().trim();\nconst studentNo = input.studentNo || '';\nconst studentName = input.studentName || '';\nconst studentEmail = input.studentEmail || '';\n\n// Detect intent\nlet intent = 'general';\nlet entities = {};\n\n// Intent detection\nif (message.includes('lost') || message.includes('report lost') || message.includes('i lost')) {\n  intent = 'lost_item';\n} else if (message.includes('found') || message.includes('report found')) {\n  intent = 'found_item';\n} else if (message.includes('my report') || message.includes('my item') || message.includes('my lost') || message.includes('what did i report')) {\n  intent = 'my_reports';\n} else if (message.includes('search') || message.includes('find') || message.includes('looking for')) {\n  intent = 'search';\n} else if (message.includes('help') || message.includes('how') || message.includes('what can') || message.includes('assist')) {\n  intent = 'help';\n} else if (message.includes('status') || message.includes('check') || message.includes('pending')) {\n  intent = 'status';\n}\n\n// Extract item name if mentioned\nconst itemPatterns = [\n  /(?:lost|found|looking for|searching for|find|looking|search)\\s+(?:my|a|an|the)?\\s*([a-z0-9\\s]+?)(?:\\s|$|\\.|,|at|in)/i,\n  /(?:i|i'm|im)\\s+(?:looking for|searching for|finding)\\s+([a-z0-9\\s]+?)(?:\\s|$|\\.|,)/i\n];\n\nfor (const pattern of itemPatterns) {\n  const match = message.match(pattern);\n  if (match && match[1]) {\n    entities.itemName = match[1].trim();\n    break;\n  }\n}\n\n// Extract location if mentioned\nconst locationMatch = message.match(/(?:at|in|near|around|from)\\s+([a-z0-9\\s]+?)(?:\\s|$|\\.|,)/i);\nif (locationMatch && locationMatch[1]) {\n  entities.location = locationMatch[1].trim();\n}\n\nreturn [{\n  json: {\n    intent: intent,\n    entities: entities,\n    originalMessage: input.message,\n    studentNo: studentNo,\n    studentName: studentName,\n    studentEmail: studentEmail,\n    timestamp: input.timestamp || new Date().toISOString(),\n    sessionId: input.sessionId || ''\n  }\n}];"
+        "jsCode": "// Get input from webhook\nconst input = $input.first().json || $input.first() || {};\n// Handle different input formats (body, json, or direct)\nconst webhookData = input.body || input.json || input || {};\nconst rawMessage = webhookData.message || input.message || '';\nconst message = (rawMessage || '').toString().toLowerCase().trim();\nconst studentNo = webhookData.studentNo || input.studentNo || '';\nconst studentName = webhookData.studentName || input.studentName || '';\nconst studentEmail = webhookData.studentEmail || input.studentEmail || '';\n\n// Get conversation history from input\nconst conversationHistory = webhookData.conversationHistory || input.conversationHistory || [];\n\n// Detect intent\nlet intent = 'general';\nlet entities = {};\n\n// Intent detection\nif (message.includes('lost') || message.includes('report lost') || message.includes('i lost')) {\n  intent = 'lost_item';\n} else if (message.includes('found') || message.includes('report found')) {\n  intent = 'found_item';\n} else if (message.includes('my report') || message.includes('my item') || message.includes('my lost') || message.includes('what did i report')) {\n  intent = 'my_reports';\n} else if (message.includes('search') || message.includes('find') || message.includes('looking for')) {\n  intent = 'search';\n} else if (message.includes('help') || message.includes('how') || message.includes('what can') || message.includes('assist')) {\n  intent = 'help';\n} else if (message.includes('status') || message.includes('check') || message.includes('pending')) {\n  intent = 'status';\n}\n\n// Extract item name if mentioned\nconst itemPatterns = [\n  /(?:lost|found|looking for|searching for|find|looking|search)\\s+(?:my|a|an|the)?\\s*([a-z0-9\\s]+?)(?:\\s|$|\\.|,|at|in)/i,\n  /(?:i|i'm|im)\\s+(?:looking for|searching for|finding)\\s+([a-z0-9\\s]+?)(?:\\s|$|\\.|,)/i\n];\n\nfor (const pattern of itemPatterns) {\n  const match = message.match(pattern);\n  if (match && match[1]) {\n    entities.itemName = match[1].trim();\n    break;\n  }\n}\n\n// Extract location if mentioned\nconst locationMatch = message.match(/(?:at|in|near|around|from)\\s+([a-z0-9\\s]+?)(?:\\s|$|\\.|,)/i);\nif (locationMatch && locationMatch[1]) {\n  entities.location = locationMatch[1].trim();\n}\n\nreturn [{\n  json: {\n    intent: intent,\n    entities: entities,\n    originalMessage: rawMessage || input.message || '',\n    studentNo: studentNo,\n    studentName: studentName,\n    studentEmail: studentEmail,\n    timestamp: webhookData.timestamp || input.timestamp || new Date().toISOString(),\n    sessionId: webhookData.sessionId || input.sessionId || '',\n    conversationHistory: conversationHistory\n  }\n}];"
       },
       "id": "process-message",
       "name": "Process Message",
@@ -84,14 +84,14 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=http://localhost/api/v1/reports?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
+        "url": "=https://ublf.x10.mx/api/v1/reports?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "your-secret-api-key-change-this"
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
             }
           ]
         },
@@ -112,14 +112,14 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=http://localhost/api/v1/reports?studentNo={{ $('Process Message').first().json.studentNo }}",
+        "url": "=https://ublf.x10.mx/api/v1/reports?studentNo={{ $('Process Message').first().json.studentNo }}",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "your-secret-api-key-change-this"
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
             }
           ]
         },
@@ -140,14 +140,14 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=http://localhost/api/v1/items?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
+        "url": "=https://ublf.x10.mx/api/v1/items?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "your-secret-api-key-change-this"
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
             }
           ]
         },
@@ -185,11 +185,11 @@
           "values": [
             {
               "role": "system",
-              "content": "You are a helpful assistant for a University Lost & Found system. Help students:\n- Report lost items\n- Search for lost or found items\n- Check their report status\n- Answer questions about the system\n\nBe friendly, concise, and helpful. Use the provided context to give accurate information. If database results are provided, format them clearly and naturally in your response. Keep responses under 200 words unless listing multiple items."
+              "content": "You are a helpful assistant for a University Lost & Found system. Help students:\n- Report lost items\n- Search for lost or found items\n- Check their report status\n- Answer questions about the system\n\nBe friendly, concise, and helpful. Use the provided context and conversation history to give accurate information. Remember previous messages in the conversation to maintain context. If database results are provided, format them clearly and naturally in your response. Keep responses under 200 words unless listing multiple items."
             },
             {
               "role": "user",
-              "content": "=User Question: {{ $('Process Message').first().json.originalMessage }}\n\nStudent Information:\n- Name: {{ $('Process Message').first().json.studentName }}\n- Student Number: {{ $('Process Message').first().json.studentNo }}\n- Intent Detected: {{ $('Process Message').first().json.intent }}\n\nDatabase Results:\n{{ $('Get Lost Items').first() ? 'Lost Items Found:\\n' + JSON.stringify($('Get Lost Items').first().json, null, 2) : ($('Get My Reports').first() ? 'User Reports:\\n' + JSON.stringify($('Get My Reports').first().json, null, 2) : ($('Get Found Items').first() ? 'Found Items:\\n' + JSON.stringify($('Get Found Items').first().json, null, 2) : 'No database results')) }}\n\nPlease provide a helpful response based on the user's question and the available information."
+              "content": "={{ (() => {\n  const processNode = $('Process Message').first();\n  const processData = processNode.json || {};\n  const conversationHistory = processData.conversationHistory || [];\n  const currentMessage = processData.originalMessage || '';\n  const studentName = processData.studentName || '';\n  const studentNo = processData.studentNo || '';\n  const intent = processData.intent || 'general';\n  \n  // Get database results from Merge All Paths\n  const mergedData = $json || {};\n  const dbResults = mergedData.data || mergedData || {};\n  \n  // Build conversation history text\n  let historyText = '';\n  if (conversationHistory && conversationHistory.length > 0) {\n    // Get last 8 messages (4 user + 4 assistant pairs) for context\n    const recentHistory = conversationHistory.slice(-8);\n    historyText = '\\n\\nPrevious Conversation History:\\n';\n    recentHistory.forEach((msg, idx) => {\n      if (msg.role && msg.content) {\n        const roleLabel = msg.role === 'user' ? 'User' : 'Assistant';\n        historyText += `${roleLabel}: ${msg.content}\\n`;\n      }\n    });\n  }\n  \n  // Build database results text\n  const dbResultsText = dbResults && typeof dbResults === 'object' && Object.keys(dbResults).length > 0 \n    ? JSON.stringify(dbResults, null, 2) \n    : 'No specific database query was needed for this request.';\n  \n  return `Current Question: ${currentMessage}${historyText}\\n\\nStudent Information:\\n- Name: ${studentName}\\n- Student Number: ${studentNo}\\n- Intent Detected: ${intent}\\n\\nDatabase Results (if available):\\n${dbResultsText}\\n\\nPlease provide a helpful, friendly response. Use the conversation history above to understand context. If the user is responding to a previous question (like 'yes' or 'no'), refer back to what was asked. Be conversational and helpful.`;\n})() }}"
             }
           ]
         },
@@ -212,7 +212,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get AI response\nconst aiNode = $('Generate AI Response').first();\nconst aiResponse = aiNode.json;\n\n// Extract reply from OpenAI response\nlet reply = '';\nif (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n  reply = aiResponse.choices[0].message.content;\n} else if (aiResponse.message && aiResponse.message.content) {\n  reply = aiResponse.message.content;\n} else if (aiResponse.content) {\n  reply = aiResponse.content;\n} else if (aiResponse.output) {\n  reply = aiResponse.output;\n} else {\n  reply = 'I apologize, but I couldn\\'t generate a response. Please try again.';\n}\n\n// Get context from Process Message node\nconst processNode = $('Process Message').first();\nconst intent = processNode.json.intent;\n\n// Get database results if available\nlet dbResults = null;\nlet resultCount = 0;\n\nconst lostItems = $('Get Lost Items').first();\nconst myReports = $('Get My Reports').first();\nconst foundItems = $('Get Found Items').first();\n\nif (lostItems) {\n  dbResults = lostItems.json;\n  resultCount = dbResults.count || (dbResults.data ? dbResults.data.length : 0);\n} else if (myReports) {\n  dbResults = myReports.json;\n  resultCount = dbResults.count || (dbResults.data ? dbResults.data.length : 0);\n} else if (foundItems) {\n  dbResults = foundItems.json;\n  resultCount = dbResults.count || (dbResults.data ? dbResults.data.length : 0);\n}\n\n// Clean up reply (remove markdown if present)\nreply = reply.trim();\nreply = reply.replace(/\\*\\*(.*?)\\*\\*/g, '$1'); // Remove bold\nreply = reply.replace(/\\*(.*?)\\*/g, '$1'); // Remove italic\n\nreturn [{\n  json: {\n    reply: reply,\n    intent: intent,\n    hasResults: resultCount > 0,\n    resultCount: resultCount,\n    timestamp: new Date().toISOString()\n  }\n}];"
+        "jsCode": "// Get AI response from previous node (Generate AI Response)\nconst aiNode = $input.first();\nconst aiResponse = aiNode.json;\n\n// Extract reply from OpenAI response - handle different response formats\nlet reply = '';\nif (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n  reply = aiResponse.choices[0].message.content;\n} else if (aiResponse.message && aiResponse.message.content) {\n  reply = aiResponse.message.content;\n} else if (aiResponse.content) {\n  reply = aiResponse.content;\n} else if (aiResponse.output) {\n  reply = aiResponse.output;\n} else if (aiResponse.text) {\n  reply = aiResponse.text;\n} else if (typeof aiResponse === 'string') {\n  reply = aiResponse;\n} else {\n  reply = 'I apologize, but I couldn\\'t generate a response. Please try again.';\n}\n\n// Get context from Process Message node (safe access)\nlet intent = 'general';\ntry {\n  const processNode = $('Process Message').first();\n  if (processNode && processNode.json) {\n    intent = processNode.json.intent || 'general';\n  }\n} catch (e) {\n  // Process Message node might not be accessible, use default\n  intent = 'general';\n}\n\n// Get database results count from merged data (if available)\n// Don't reference unexecuted nodes - use data from Merge All Paths instead\nlet resultCount = 0;\ntry {\n  // Check if we have data from Merge All Paths\n  const mergedData = $input.first().json;\n  if (mergedData && mergedData.data && Array.isArray(mergedData.data)) {\n    resultCount = mergedData.data.length;\n  } else if (mergedData && mergedData.count) {\n    resultCount = mergedData.count;\n  } else if (Array.isArray(mergedData)) {\n    resultCount = mergedData.length;\n  }\n} catch (e) {\n  // No database results available, that's fine for general queries\n  resultCount = 0;\n}\n\n// Clean up reply (remove markdown if present)\nreply = reply.trim();\nreply = reply.replace(/\\*\\*(.*?)\\*\\*/g, '$1'); // Remove bold\nreply = reply.replace(/\\*(.*?)\\*/g, '$1'); // Remove italic\nreply = reply.replace(/```[\\s\\S]*?```/g, ''); // Remove code blocks\n\nreturn [{\n  json: {\n    reply: reply,\n    intent: intent,\n    hasResults: resultCount > 0,\n    resultCount: resultCount,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
       "id": "format-response",
       "name": "Format Response",

@@ -8,7 +8,9 @@ class Admin {
     public function __construct() {
         $database = new Database();
         $this->conn = $database->getConnection();
-        // If no database connection, $this->conn will be null - methods will handle this
+        if ($this->conn === null) {
+            throw new Exception('Database connection unavailable');
+        }
     }
 
     public function login($username, $password) {

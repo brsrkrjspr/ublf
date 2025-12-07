@@ -33,9 +33,10 @@ class Config {
         
         // Set default configuration values
         self::$config = [
-            'N8N_WEBHOOK_URL' => getenv('N8N_WEBHOOK_URL') ?: 'https://your-n8n-instance.com/webhook/chatbot',
+            'N8N_WEBHOOK_URL' => getenv('N8N_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/chatbot',
+            'N8N_APPROVAL_WEBHOOK_URL' => getenv('N8N_APPROVAL_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/approval-action',
             'N8N_API_KEY' => getenv('N8N_API_KEY') ?: '',
-            'API_KEY' => getenv('API_KEY') ?: 'your-secret-api-key-change-this',
+            'API_KEY' => getenv('API_KEY') ?: 'ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h',
             'ENVIRONMENT' => getenv('ENVIRONMENT') ?: 'development',
             'DEBUG' => getenv('DEBUG') ?: 'false',
         ];

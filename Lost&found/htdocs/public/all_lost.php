@@ -47,7 +47,10 @@ if (empty($itemClasses)) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>All Lost Items - UB Lost & Found</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="../assets/ub.css" rel="stylesheet">
+  <?php
+  $ubCssFile = file_exists(__DIR__ . '/../assets/UB.css') ? 'UB.css' : 'ub.css';
+  ?>
+  <link href="css.php?file=<?php echo urlencode($ubCssFile); ?>" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>

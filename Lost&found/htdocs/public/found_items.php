@@ -8,36 +8,57 @@ if (!isset($_SESSION['student'])) {
 $student = $_SESSION['student'];
 $db = new Database();
 $conn = $db->getConnection();
-// Filtering logic for found items
-$foundWhere = [];
-$foundParams = [];
-if (!empty($_GET['found_keyword'])) {
-  $foundWhere[] = '(i.Description LIKE :keyword)';
-  $foundParams['keyword'] = '%' . $_GET['found_keyword'] . '%';
-}
-if (!empty($_GET['found_date'])) {
-  $foundWhere[] = 'i.DateFound = :date';
-  $foundParams['date'] = $_GET['found_date'];
-}
-if (!empty($_GET['found_class'])) {
-  $foundWhere[] = 'c.ClassName LIKE :class';
-  $foundParams['class'] = '%' . $_GET['found_class'] . '%';
-}
-$foundSql = 'SELECT i.ItemID, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, a.AdminName, a.Email FROM Item i JOIN ItemClass c ON i.ItemClassID = c.ItemClassID JOIN Admin a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
-if ($foundWhere) {
-  $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
-}
-$foundSql .= ' ORDER BY i.CreatedAt DESC';
-$stmt = $conn->prepare($foundSql);
-$stmt->execute($foundParams);
-$foundItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch item classes for dropdown
-require_once __DIR__ . '/../classes/Item.php';
-$itemObj = new Item();
-$itemClasses = $itemObj->getItemClasses();
-if (empty($itemClasses)) {
-  $itemClasses = ['Electronics', 'Books', 'Clothing', 'Bags', 'ID Cards', 'Keys', 'Others'];
+// Initialize variables
+$foundItems = [];
+$itemClasses = ['Electronics', 'Books', 'Clothing', 'Bags', 'ID Cards', 'Keys', 'Others'];
+
+if ($conn === null) {
+    // Database connection failed - use default item classes
+    error_log("Found Items: Database connection unavailable");
+} else {
+    // Filtering logic for found items
+    $foundWhere = [];
+    $foundParams = [];
+    if (!empty($_GET['found_keyword'])) {
+      $foundWhere[] = '(i.Description LIKE :keyword OR i.ItemName LIKE :keyword)';
+      $foundParams['keyword'] = '%' . $_GET['found_keyword'] . '%';
+    }
+    if (!empty($_GET['found_date'])) {
+      $foundWhere[] = 'i.DateFound = :date';
+      $foundParams['date'] = $_GET['found_date'];
+    }
+    if (!empty($_GET['found_class'])) {
+      $foundWhere[] = 'c.ClassName LIKE :class';
+      $foundParams['class'] = '%' . $_GET['found_class'] . '%';
+    }
+    $foundSql = 'SELECT i.ItemID, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, a.AdminName, a.Email FROM Item i JOIN ItemClass c ON i.ItemClassID = c.ItemClassID JOIN Admin a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
+    if ($foundWhere) {
+      $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
+    }
+    $foundSql .= ' ORDER BY i.CreatedAt DESC';
+    
+    try {
+        $stmt = $conn->prepare($foundSql);
+        $stmt->execute($foundParams);
+        $foundItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log("Found Items SQL Error: " . $e->getMessage());
+        $foundItems = [];
+    }
+
+    // Fetch item classes for dropdown
+    try {
+        require_once __DIR__ . '/../classes/Item.php';
+        $itemObj = new Item();
+        $fetchedClasses = $itemObj->getItemClasses();
+        if (!empty($fetchedClasses)) {
+            $itemClasses = $fetchedClasses;
+        }
+    } catch (Exception $e) {
+        error_log("Found Items: Failed to load Item class - " . $e->getMessage());
+        // Use default item classes already set above
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -47,7 +68,10 @@ if (empty($itemClasses)) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Found Items - UB Lost & Found</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="../assets/ub.css" rel="stylesheet">
+  <?php
+  $ubCssFile = file_exists(__DIR__ . '/../assets/UB.css') ? 'UB.css' : 'ub.css';
+  ?>
+  <link href="css.php?file=<?php echo urlencode($ubCssFile); ?>" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>

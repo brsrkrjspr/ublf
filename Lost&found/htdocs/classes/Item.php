@@ -3,11 +3,14 @@ require_once __DIR__ . '/../includes/Database.php';
 
 class Item {
     private $conn;
-    private $table = 'Item';
+    private $table = 'item';
 
     public function __construct() {
         $database = new Database();
         $this->conn = $database->getConnection();
+        if ($this->conn === null) {
+            throw new Exception('Database connection unavailable');
+        }
     }
 
     public function create($adminID, $itemName, $itemClass, $description, $dateFound, $locationFound, $photoURL = null) {
@@ -35,7 +38,7 @@ class Item {
 
     private function getOrCreateItemClass($className) {
         // Check if class exists
-        $stmt = $this->conn->prepare('SELECT ItemClassID FROM ItemClass WHERE ClassName = :className LIMIT 1');
+        $stmt = $this->conn->prepare('SELECT ItemClassID FROM itemclass WHERE ClassName = :className LIMIT 1');
         $stmt->execute(['className' => $className]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -43,7 +46,7 @@ class Item {
             return $row['ItemClassID'];
         } else {
             // Create new class
-            $stmt = $this->conn->prepare('INSERT INTO ItemClass (ClassName) VALUES (:className)');
+            $stmt = $this->conn->prepare('INSERT INTO itemclass (ClassName) VALUES (:className)');
             $stmt->execute(['className' => $className]);
             return $this->conn->lastInsertId();
         }
@@ -53,7 +56,7 @@ class Item {
         $query = "SELECT i.ItemID, i.ItemName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.StatusConfirmed,
                          ic.ClassName
                   FROM {$this->table} i
-                  JOIN ItemClass ic ON i.ItemClassID = ic.ItemClassID
+                  JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
                   WHERE i.StatusConfirmed = 1
                   ORDER BY i.ItemID DESC";
         
@@ -73,7 +76,7 @@ class Item {
     public function getById($itemID) {
         $query = "SELECT i.*, ic.ClassName
                   FROM {$this->table} i
-                  JOIN ItemClass ic ON i.ItemClassID = ic.ItemClassID
+                  JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
                   WHERE i.ItemID = :itemID";
         
         $stmt = $this->conn->prepare($query);
@@ -104,30 +107,35 @@ class Item {
     }
 
     public function search($searchTerm, $itemClass = null) {
-        $query = "SELECT i.ItemID, i.ItemName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.StatusConfirmed,
-                         ic.ClassName
-                  FROM {$this->table} i
-                  JOIN ItemClass ic ON i.ItemClassID = ic.ItemClassID
-                  WHERE i.StatusConfirmed = 1 AND 
-                        (i.ItemName LIKE :searchTerm OR i.Description LIKE :searchTerm OR i.LocationFound LIKE :searchTerm)";
-        
-        $params = ['searchTerm' => "%{$searchTerm}%"];
-        
-        if ($itemClass) {
-            $query .= " AND ic.ClassName = :itemClass";
-            $params['itemClass'] = $itemClass;
+        try {
+            $query = "SELECT i.ItemID, i.ItemName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.StatusConfirmed,
+                             ic.ClassName
+                      FROM {$this->table} i
+                      JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
+                      WHERE i.StatusConfirmed = 1 AND 
+                            (i.ItemName LIKE :searchTerm OR i.Description LIKE :searchTerm OR i.LocationFound LIKE :searchTerm)";
+            
+            $params = ['searchTerm' => "%{$searchTerm}%"];
+            
+            if ($itemClass) {
+                $query .= " AND ic.ClassName = :itemClass";
+                $params['itemClass'] = $itemClass;
+            }
+            
+            $query .= " ORDER BY i.ItemID DESC";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Item::search() PDO Error: " . $e->getMessage());
+            throw new Exception('Database query failed: ' . $e->getMessage());
         }
-        
-        $query .= " ORDER BY i.ItemID DESC";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getItemClasses() {
         $query = "SELECT DISTINCT ic.ClassName 
-                  FROM ItemClass ic 
+                  FROM itemclass ic 
                   JOIN {$this->table} i ON ic.ItemClassID = i.ItemClassID 
                   WHERE i.StatusConfirmed = 1 
                   ORDER BY ic.ClassName";
@@ -140,7 +148,7 @@ class Item {
         $query = "SELECT i.ItemID, i.ItemName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL,
                          ic.ClassName
                   FROM {$this->table} i
-                  JOIN ItemClass ic ON i.ItemClassID = ic.ItemClassID
+                  JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
                   WHERE i.StatusConfirmed = 1 AND 
                         (i.ItemName LIKE :searchTerm OR i.Description LIKE :searchTerm)";
         

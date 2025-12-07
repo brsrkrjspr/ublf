@@ -28,14 +28,14 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=http://localhost/api/v1/reports?search={{ $json.itemName }}&itemClass={{ $json.itemClass }}",
+        "url": "=https://ublf.x10.mx/api/v1/reports?search={{ $json.itemName }}&itemClass={{ $json.itemClass }}",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "your-secret-api-key-change-this"
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
             }
           ]
         },
@@ -95,14 +95,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=http://localhost/api/v1/webhooks",
+        "url": "=https://ublf.x10.mx/api/v1/webhooks",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "your-secret-api-key-change-this"
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
             }
           ]
         },
