@@ -1,20 +1,22 @@
 FROM php:8.2-apache
 
-# Enable required Apache modules
+# Enable Apache rewrite (important for routing)
 RUN a2enmod rewrite
 
-# Install common PHP extensions
+# Install PHP extensions
 RUN docker-php-ext-install mysqli pdo pdo_mysql
 
-# Set Apache DocumentRoot to /var/www/html/public
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/Lost\&found/htdocs/public
+# Set DocumentRoot (with quotes if folder contains "&")
+ENV APACHE_DOCUMENT_ROOT="/var/www/html/Lost&found/htdocs/public"
 
-# Update Apache config to use new DocumentRoot
-RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/000-default.conf \
-    && sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
+# Update Apache config to use custom DocumentRoot
+RUN sed -ri "s#DocumentRoot /var/www/html#DocumentRoot ${APACHE_DOCUMENT_ROOT}#g" /etc/apache2/sites-available/000-default.conf \
+    && sed -ri "s#/var/www/html#${APACHE_DOCUMENT_ROOT}#g" /etc/apache2/apache2.conf
 
-# Copy all project files into container
+# Copy project files
 COPY . /var/www/html/
 
 # Fix permissions
 RUN chown -R www-data:www-data /var/www/html
+
+EXPOSE 80
