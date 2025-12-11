@@ -9,20 +9,15 @@ RUN docker-php-ext-install mysqli pdo pdo_mysql
 # Set working directory
 WORKDIR /var/www/html
 
-# DocumentRoot containing "&" must be QUOTED
-ENV APACHE_DOCUMENT_ROOT="/var/www/html/Lost&found/htdocs/public"
-
-# Update Apache config for DocumentRoot
-RUN sed -ri "s#DocumentRoot /var/www/html#DocumentRoot ${APACHE_DOCUMENT_ROOT}#g" /etc/apache2/sites-available/000-default.conf \
-    && sed -ri "s#<Directory /var/www/html>#<Directory ${APACHE_DOCUMENT_ROOT}>#g" /etc/apache2/sites-available/000-default.conf \
-    && sed -ri "s#/var/www/html#${APACHE_DOCUMENT_ROOT}#g" /etc/apache2/apache2.conf
+# Copy Apache configuration file first (before project files)
+COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
 
 # Copy project files
 COPY . /var/www/html/
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/Lost\&found/htdocs/assets/uploads
+    && chmod -R 755 "/var/www/html/Lost&found/htdocs/assets/uploads"
 
 EXPOSE 80
 
