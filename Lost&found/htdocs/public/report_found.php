@@ -37,8 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $itemClassID = $conn->lastInsertId();
     }
 
+    // Get StatusID for 'Pending' status (StatusID = 4)
+    $stmt = $conn->prepare('SELECT StatusID FROM itemstatus WHERE StatusName = :statusName LIMIT 1');
+    $stmt->execute(['statusName' => 'Pending']);
+    $statusRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    $statusID = $statusRow ? $statusRow['StatusID'] : 4; // fallback to 4 if not found
+
     // Insert into Item
-    $stmt = $conn->prepare('INSERT INTO Item (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusConfirmed) VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 0)');
+    $stmt = $conn->prepare('INSERT INTO Item (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusID, StatusConfirmed) VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, :statusID, 0)');
     $result = $stmt->execute([
         'adminID' => $adminID,
         'itemName' => $itemName,
@@ -46,7 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'description' => $description,
         'dateFound' => $dateFound,
         'locationFound' => $locationFound,
-        'photoURL' => $photoURL
+        'photoURL' => $photoURL,
+        'statusID' => $statusID
     ]);
 
     if ($result) {

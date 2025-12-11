@@ -1,0 +1,456 @@
+{
+  "name": "UB Lost & Found Chatbot - AI Driven",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "chatbot"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare context for AI analysis\nconst input = $input.first().json || $input.first() || {};\nconst webhookData = input.body || input.json || input || {};\n\nreturn [{\n  json: {\n    originalMessage: webhookData.message || input.message || '',\n    studentNo: webhookData.studentNo || input.studentNo || '',\n    studentName: webhookData.studentName || input.studentName || '',\n    studentEmail: webhookData.studentEmail || input.studentEmail || '',\n    conversationHistory: webhookData.conversationHistory || input.conversationHistory || [],\n    timestamp: webhookData.timestamp || input.timestamp || new Date().toISOString(),\n    sessionId: webhookData.sessionId || input.sessionId || ''\n  }\n}];"
+      },
+      "id": "prepare-context",
+      "name": "Prepare Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an intent analyzer for a University Lost & Found chatbot. Analyze user messages and determine what database queries are needed.\n\nReturn ONLY valid JSON in this exact format:\n{\n  \"intent\": \"my_reports\" | \"search_lost\" | \"search_found\" | \"general\" | \"help\",\n  \"needsLostItems\": boolean,\n  \"needsMyReports\": boolean,\n  \"needsFoundItems\": boolean,\n  \"searchTerm\": \"extracted item name or null\",\n  \"studentNo\": \"student number if needed for my_reports\",\n  \"reasoning\": \"brief explanation of your analysis\"\n}\n\nIntent meanings:\n- \"my_reports\": User wants to see their own reports (e.g., \"my items\", \"what did I report\", \"show my posts\", \"how many posted items do i have\")\n- \"search_lost\": User wants to search lost items (e.g., \"find lost phone\", \"search for lost items\", \"anyone lost a laptop\")\n- \"search_found\": User wants to search found items (e.g., \"anyone found a laptop\", \"check found items\", \"show found items\")\n- \"general\": General questions, greetings, system info\n- \"help\": User needs help understanding the system\n\nBe intelligent - understand context and nuance. \"How many posted items do I have?\" = my_reports, not general. \"What did I report?\" = my_reports. \"Show me my lost items\" = my_reports."
+            },
+            {
+              "role": "user",
+              "content": "={{ (() => {\n  const context = $json || {};\n  const message = context.originalMessage || '';\n  const studentName = context.studentName || '';\n  const studentNo = context.studentNo || '';\n  const conversationHistory = context.conversationHistory || [];\n  \n  let historyText = '';\n  if (conversationHistory && conversationHistory.length > 0) {\n    const recentHistory = conversationHistory.slice(-4);\n    historyText = '\\n\\nRecent Conversation:\\n';\n    recentHistory.forEach((msg) => {\n      if (msg.role && msg.content) {\n        const roleLabel = msg.role === 'user' ? 'User' : 'Assistant';\n        historyText += `${roleLabel}: ${msg.content}\\n`;\n      }\n    });\n  }\n  \n  return `Analyze this message: ${message}\\n\\nStudent: ${studentName} (${studentNo})${historyText}\\n\\nReturn JSON with intent analysis.`;\n})() }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 300
+        }
+      },
+      "id": "ai-intent-analysis",
+      "name": "AI Intent Analysis",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI intent analysis and merge with context\nconst aiResponse = $input.first().json;\n\n// Extract JSON from AI response (handle different formats)\nlet aiAnalysis = {};\nlet aiContent = '';\n\nif (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n  aiContent = aiResponse.choices[0].message.content;\n} else if (aiResponse.message && aiResponse.message.content) {\n  aiContent = aiResponse.message.content;\n} else if (aiResponse.content) {\n  aiContent = aiResponse.content;\n} else if (aiResponse.output) {\n  aiContent = aiResponse.output;\n} else if (typeof aiResponse === 'string') {\n  aiContent = aiResponse;\n} else {\n  aiAnalysis = aiResponse;\n}\n\n// Parse JSON from AI response if needed\nif (aiContent) {\n  aiContent = aiContent.trim();\n  aiContent = aiContent.replace(/```json\\n?/g, '');\n  aiContent = aiContent.replace(/```\\n?/g, '');\n  \n  try {\n    aiAnalysis = JSON.parse(aiContent);\n  } catch (e) {\n    const jsonMatch = aiContent.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      try {\n        aiAnalysis = JSON.parse(jsonMatch[0]);\n      } catch (e2) {\n        aiAnalysis = {\n          intent: 'general',\n          needsLostItems: false,\n          needsMyReports: false,\n          needsFoundItems: false,\n          searchTerm: null,\n          reasoning: 'Failed to parse AI response'\n        };\n      }\n    } else {\n      aiAnalysis = {\n        intent: 'general',\n        needsLostItems: false,\n        needsMyReports: false,\n        needsFoundItems: false,\n        searchTerm: null,\n        reasoning: 'No valid JSON found'\n      };\n    }\n  }\n}\n\n// Get context from previous node\nconst context = $input.first().json || {};\n\n// Merge AI analysis with context\nreturn [{\n  json: {\n    ...context,\n    ...aiAnalysis,\n    studentNo: aiAnalysis.studentNo || context.studentNo || '',\n    searchTerm: aiAnalysis.searchTerm || null\n  }\n}];"
+      },
+      "id": "smart-router",
+      "name": "Smart Router",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Route to appropriate HTTP nodes based on AI analysis flags\nconst data = $input.first().json || {};\nconst needsLostItems = data.needsLostItems === true;\nconst needsMyReports = data.needsMyReports === true;\nconst needsFoundItems = data.needsFoundItems === true;\n\nconst outputs = [];\n\n// Route to Get Lost Items if needed\nif (needsLostItems) {\n  outputs.push({\n    json: {\n      ...data,\n      queryType: 'lost_items'\n    }\n  });\n}\n\n// Route to Get My Reports if needed\nif (needsMyReports) {\n  outputs.push({\n    json: {\n      ...data,\n      queryType: 'my_reports'\n    }\n  });\n}\n\n// Route to Get Found Items if needed\nif (needsFoundItems) {\n  outputs.push({\n    json: {\n      ...data,\n      queryType: 'found_items'\n    }\n  });\n}\n\n// If no queries needed, send to Merge directly (general query)\nif (outputs.length === 0) {\n  outputs.push({\n    json: {\n      ...data,\n      queryType: 'none'\n    }\n  });\n}\n\nreturn outputs;"
+      },
+      "id": "route-intent",
+      "name": "Route Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "is-lost-items",
+              "leftValue": "={{ $json.queryType }}",
+              "rightValue": "lost_items",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-lost-items",
+      "name": "Route Lost Items",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "is-my-reports",
+              "leftValue": "={{ $json.queryType }}",
+              "rightValue": "my_reports",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-my-reports",
+      "name": "Route My Reports",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "is-found-items",
+              "leftValue": "={{ $json.queryType }}",
+              "rightValue": "found_items",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-found-items",
+      "name": "Route Found Items",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://ublf.x10.mx/api/v1/reports.php?search={{ $json.searchTerm || $json.originalMessage }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "get-lost-items",
+      "name": "Get Lost Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1450, 150]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://ublf.x10.mx/api/v1/reports.php?studentNo={{ $json.studentNo }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "get-my-reports",
+      "name": "Get My Reports",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://ublf.x10.mx/api/v1/items.php?search={{ $json.searchTerm || $json.originalMessage }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "get-found-items",
+      "name": "Get Found Items",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1450, 450]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "merge-paths",
+      "name": "Merge All Paths",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare data for AI response generation\nconst mergedData = $input.all();\n\n// Get context from Smart Router (via Route Intent false output or from previous nodes)\nlet context = {};\nlet aiAnalysis = {};\n\n// Check if we have Smart Router data (from Route Intent false output for general queries)\nmergedData.forEach((item) => {\n  const data = item.json || {};\n  // Smart Router data has originalMessage and AI analysis fields\n  if (data.originalMessage !== undefined && data.intent !== undefined) {\n    context = {\n      originalMessage: data.originalMessage || '',\n      studentName: data.studentName || '',\n      studentNo: data.studentNo || '',\n      conversationHistory: data.conversationHistory || []\n    };\n    aiAnalysis = {\n      intent: data.intent || 'general',\n      needsLostItems: data.needsLostItems || false,\n      needsMyReports: data.needsMyReports || false,\n      needsFoundItems: data.needsFoundItems || false,\n      searchTerm: data.searchTerm || null,\n      reasoning: data.reasoning || ''\n    };\n  }\n});\n\n// If no context found, get from Smart Router node\nif (!context.originalMessage) {\n  try {\n    const routerData = $('Smart Router').first().json || {};\n    context = {\n      originalMessage: routerData.originalMessage || '',\n      studentName: routerData.studentName || '',\n      studentNo: routerData.studentNo || '',\n      conversationHistory: routerData.conversationHistory || []\n    };\n    aiAnalysis = {\n      intent: routerData.intent || 'general',\n      needsLostItems: routerData.needsLostItems || false,\n      needsMyReports: routerData.needsMyReports || false,\n      needsFoundItems: routerData.needsFoundItems || false,\n      searchTerm: routerData.searchTerm || null,\n      reasoning: routerData.reasoning || ''\n    };\n  } catch (e) {\n    // Fallback to Prepare Context\n    try {\n      const prevContext = $('Prepare Context').first().json || {};\n      context = {\n        originalMessage: prevContext.originalMessage || '',\n        studentName: prevContext.studentName || '',\n        studentNo: prevContext.studentNo || '',\n        conversationHistory: prevContext.conversationHistory || []\n      };\n    } catch (e2) {\n      // Use defaults\n    }\n  }\n}\n\n// Collect database results from HTTP Request nodes\n// HTTP Request nodes don't have originalMessage field\nconst dbResults = [];\nmergedData.forEach((item) => {\n  const data = item.json || {};\n  // Skip Smart Router data (has originalMessage)\n  if (data.originalMessage === undefined) {\n    // This is from an HTTP Request node\n    if (data.data && Array.isArray(data.data)) {\n      dbResults.push(...data.data);\n    } else if (data.success && data.data) {\n      if (Array.isArray(data.data)) {\n        dbResults.push(...data.data);\n      } else if (data.data) {\n        dbResults.push(data.data);\n      }\n    }\n  }\n});\n\nreturn [{\n  json: {\n    originalMessage: context.originalMessage || '',\n    studentName: context.studentName || '',\n    studentNo: context.studentNo || '',\n    conversationHistory: context.conversationHistory || [],\n    aiAnalysis: aiAnalysis,\n    dbResults: dbResults,\n    dbResultsCount: dbResults.length\n  }\n}];"
+      },
+      "id": "prepare-ai-response",
+      "name": "Prepare AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a helpful, conversational assistant for a University Lost & Found system. Help students:\n- Report lost items\n- Search for lost or found items\n- Check their report status\n- Answer questions about the system\n\nBe natural, friendly, and conversational. Use the provided context and conversation history to give accurate information. Remember previous messages to maintain context.\n\nIf database results are provided, format them clearly and naturally. If no results are found, say so clearly. Keep responses under 200 words unless listing multiple items.\n\nIMPORTANT: All database queries are ALREADY COMPLETE. Provide the complete answer directly. Do NOT say \"wait a moment\" or \"let me check\" - respond with the final answer immediately."
+            },
+            {
+              "role": "user",
+              "content": "={{ (() => {\n  const data = $json || {};\n  const message = data.originalMessage || '';\n  const studentName = data.studentName || '';\n  const studentNo = data.studentNo || '';\n  const conversationHistory = data.conversationHistory || [];\n  const aiAnalysis = data.aiAnalysis || {};\n  const dbResults = data.dbResults || [];\n  \n  // Build conversation history text\n  let historyText = '';\n  if (conversationHistory && conversationHistory.length > 0) {\n    const recentHistory = conversationHistory.slice(-8);\n    historyText = '\\n\\nPrevious Conversation History:\\n';\n    recentHistory.forEach((msg) => {\n      if (msg.role && msg.content) {\n        const roleLabel = msg.role === 'user' ? 'User' : 'Assistant';\n        historyText += `${roleLabel}: ${msg.content}\\n`;\n      }\n    });\n  }\n  \n  // Format database results\n  let dbResultsText = 'No database queries were needed for this request.';\n  if (dbResults && dbResults.length > 0) {\n    const actualResults = dbResults.filter(r => r.queryType === undefined);\n    if (actualResults.length > 0) {\n      dbResultsText = JSON.stringify(actualResults, null, 2);\n    } else {\n      dbResultsText = 'Database query executed but no results found.';\n    }\n  }\n  \n  // Format AI analysis\n  const analysisText = aiAnalysis && Object.keys(aiAnalysis).length > 0\n    ? JSON.stringify(aiAnalysis, null, 2)\n    : 'No intent analysis available.';\n  \n  return `User Message: ${message}${historyText}\\n\\nStudent: ${studentName} (${studentNo})\\n\\nAI Intent Analysis:\\n${analysisText}\\n\\nDatabase Results:\\n${dbResultsText}\\n\\nProvide a natural, helpful response based on the user's question and the available data.`;\n})() }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500
+        }
+      },
+      "id": "generate-ai-response",
+      "name": "Generate AI Response",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [2050, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract reply from AI response\nconst aiNode = $input.first();\nconst aiResponse = aiNode.json;\n\n// Extract reply from OpenAI response - handle different response formats\nlet reply = '';\nif (aiResponse.choices && aiResponse.choices[0] && aiResponse.choices[0].message) {\n  reply = aiResponse.choices[0].message.content;\n} else if (aiResponse.message && aiResponse.message.content) {\n  reply = aiResponse.message.content;\n} else if (aiResponse.content) {\n  reply = aiResponse.content;\n} else if (aiResponse.output) {\n  reply = aiResponse.output;\n} else if (aiResponse.text) {\n  reply = aiResponse.text;\n} else if (typeof aiResponse === 'string') {\n  reply = aiResponse;\n} else {\n  reply = 'I apologize, but I couldn\\'t generate a response. Please try again.';\n}\n\n// Clean up reply (remove markdown if present)\nreply = reply.trim();\nreply = reply.replace(/\\*\\*(.*?)\\*\\*/g, '$1'); // Remove bold\nreply = reply.replace(/\\*(.*?)\\*/g, '$1'); // Remove italic\nreply = reply.replace(/```[\\s\\S]*?```/g, ''); // Remove code blocks\n\n// Get context\nconst preparedData = $('Prepare AI Response').first().json || {};\nconst intent = preparedData.aiAnalysis?.intent || 'general';\nconst resultCount = preparedData.dbResultsCount || 0;\n\nreturn [{\n  json: {\n    reply: reply,\n    intent: intent,\n    hasResults: resultCount > 0,\n    resultCount: resultCount,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "send-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.first().json.error;\nconst errorMessage = error?.message || error?.error || 'Unknown error';\n\nreturn [{\n  json: {\n    reply: 'I encountered an error processing your request. Please try again or contact admin for assistance. You can also use the dashboard to report items directly.',\n    error: errorMessage,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-error-response",
+      "name": "Format Error Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Prepare Context", "type": "main", "index": 0}]]
+    },
+    "Prepare Context": {
+      "main": [[{"node": "AI Intent Analysis", "type": "main", "index": 0}]]
+    },
+    "AI Intent Analysis": {
+      "main": [[{"node": "Smart Router", "type": "main", "index": 0}]]
+    },
+    "Smart Router": {
+      "main": [[{"node": "Route Intent", "type": "main", "index": 0}]]
+    },
+    "Route Intent": {
+      "main": [
+        [
+          {"node": "Route Lost Items", "type": "main", "index": 0},
+          {"node": "Route My Reports", "type": "main", "index": 0},
+          {"node": "Route Found Items", "type": "main", "index": 0},
+          {"node": "Merge All Paths", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Route Lost Items": {
+      "main": [
+        [{"node": "Get Lost Items", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Route My Reports": {
+      "main": [
+        [{"node": "Get My Reports", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Route Found Items": {
+      "main": [
+        [{"node": "Get Found Items", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Get Lost Items": {
+      "main": [[{"node": "Merge All Paths", "type": "main", "index": 0}]]
+    },
+    "Get My Reports": {
+      "main": [[{"node": "Merge All Paths", "type": "main", "index": 0}]]
+    },
+    "Get Found Items": {
+      "main": [[{"node": "Merge All Paths", "type": "main", "index": 0}]]
+    },
+    "Merge All Paths": {
+      "main": [[{"node": "Prepare AI Response", "type": "main", "index": 0}]]
+    },
+    "Prepare AI Response": {
+      "main": [[{"node": "Generate AI Response", "type": "main", "index": 0}]]
+    },
+    "Generate AI Response": {
+      "main": [[{"node": "Format Response", "type": "main", "index": 0}]]
+    },
+    "Format Response": {
+      "main": [[{"node": "Send Response", "type": "main", "index": 0}]]
+    },
+    "Webhook Trigger": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Prepare Context": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "AI Intent Analysis": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Smart Router": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Route Intent": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Route Lost Items": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Route My Reports": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Route Found Items": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Get Lost Items": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Get My Reports": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Get Found Items": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Prepare AI Response": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Generate AI Response": {
+      "error": [[{"node": "Format Error Response", "type": "main", "index": 0}]]
+    },
+    "Format Error Response": {
+      "main": [[{"node": "Send Response", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 60,
+    "saveExecutionProgress": false,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+
