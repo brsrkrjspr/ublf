@@ -670,6 +670,7 @@ function handleFoundItemReport($item, $fileUpload) {
     const placeholder = document.createElement('div');
     placeholder.className = 'chat-message chat-message--ai';
     placeholder.textContent = 'Typing…';
+    placeholder.id = 'typing-placeholder-' + Date.now();
     chatWindow.appendChild(placeholder);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -686,7 +687,11 @@ function handleFoundItemReport($item, $fileUpload) {
 
       // remove placeholder and append real reply
       placeholder.remove();
-      appendMessage(data.reply || 'No response from server', 'ai');
+      const replyText = data.reply || 'No response from server';
+      appendMessage(replyText, 'ai');
+      
+      // Note: If response contains "wait a moment", it means the n8n workflow
+      // responded before completing all processing. The proper fix is in the n8n workflow.
     }catch(err){
       placeholder.remove();
       appendMessage('Error contacting server. Try again later.', 'ai');
