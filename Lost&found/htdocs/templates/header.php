@@ -142,12 +142,12 @@ if ($student && $conn) {
           </form>
         </div>
         <div class="mt-2">
-          <button class="btn btn-outline-light btn-sm w-100 d-flex align-items-center justify-content-between" id="darkModeToggle" type="button">
+          <button class="btn btn-outline-light btn-sm w-100 d-flex align-items-center justify-content-between" id="darkModeToggle" type="button" title="Toggle Dark Mode">
             <span>
-              <i class="bi bi-moon me-2"></i>
-              <span id="darkModeText">Dark Mode</span>
+              <i class="bi bi-moon me-2" id="darkModeIcon"></i>
+              <span id="darkModeText" class="dark-mode-text">Dark Mode</span>
             </span>
-            <span class="form-check form-switch mb-0">
+            <span class="form-check form-switch mb-0 dark-mode-switch">
               <input class="form-check-input" type="checkbox" id="darkModeSwitch">
             </span>
           </button>
@@ -242,15 +242,25 @@ function setDarkMode(enabled) {
     localStorage.setItem('ubDarkMode', '1');
     const switchEl = document.getElementById('darkModeSwitch');
     const textEl = document.getElementById('darkModeText');
+    const iconEl = document.getElementById('darkModeIcon');
     if (switchEl) switchEl.checked = true;
     if (textEl) textEl.textContent = 'Light Mode';
+    if (iconEl) {
+      iconEl.classList.remove('bi-moon');
+      iconEl.classList.add('bi-sun');
+    }
   } else {
     document.body.classList.remove('dark-mode');
     localStorage.setItem('ubDarkMode', '0');
     const switchEl = document.getElementById('darkModeSwitch');
     const textEl = document.getElementById('darkModeText');
+    const iconEl = document.getElementById('darkModeIcon');
     if (switchEl) switchEl.checked = false;
     if (textEl) textEl.textContent = 'Dark Mode';
+    if (iconEl) {
+      iconEl.classList.remove('bi-sun');
+      iconEl.classList.add('bi-moon');
+    }
   }
 }
 document.addEventListener('DOMContentLoaded', function() {

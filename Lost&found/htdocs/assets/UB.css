@@ -78,12 +78,23 @@ input[type="file"] {
   background: #fff;
 }
 /* Dark mode styles */
+body.dark-mode {
+  --ub-bg: #18191a;
+  --ub-text: #f3f3f3;
+  --ub-card-bg: #232526;
+  --ub-modal-bg: #232526;
+  background: var(--ub-bg) !important;
+  color: var(--ub-text) !important;
+}
+
 .dark-mode {
   --ub-bg: #18191a;
   --ub-text: #f3f3f3;
   --ub-card-bg: #232526;
   --ub-modal-bg: #232526;
 }
+
+body.dark-mode,
 .dark-mode body {
   background: var(--ub-bg) !important;
   color: var(--ub-text) !important;
@@ -94,10 +105,45 @@ input[type="file"] {
 .dark-mode .navbar .navbar-brand {
   color: var(--ub-gold) !important;
 }
-.dark-mode .card, .dark-mode .profile-info-card, .dark-mode .modal-content {
+body.dark-mode .card, 
+body.dark-mode .profile-info-card, 
+body.dark-mode .modal-content,
+.dark-mode .card, 
+.dark-mode .profile-info-card, 
+.dark-mode .modal-content {
   background: var(--ub-card-bg) !important;
   color: var(--ub-text) !important;
   border-color: #333 !important;
+}
+
+body.dark-mode .main-content,
+.dark-mode .main-content {
+  background: var(--ub-bg) !important;
+  color: var(--ub-text) !important;
+}
+
+body.dark-mode .container,
+.dark-mode .container {
+  background: transparent !important;
+  color: var(--ub-text) !important;
+}
+
+body.dark-mode .card,
+.dark-mode .card {
+  background: var(--ub-card-bg) !important;
+  color: var(--ub-text) !important;
+}
+
+body.dark-mode .list-group-item,
+.dark-mode .list-group-item {
+  background: var(--ub-card-bg) !important;
+  color: var(--ub-text) !important;
+  border-color: #444 !important;
+}
+
+body.dark-mode .text-muted,
+.dark-mode .text-muted {
+  color: #adb5bd !important;
 }
 .dark-mode .modal-header {
   background: var(--ub-maroon) !important;

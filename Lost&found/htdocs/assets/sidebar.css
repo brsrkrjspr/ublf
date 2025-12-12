@@ -232,6 +232,17 @@
   background: #faf9f6;
 }
 
+/* Dark mode styles for main content */
+body.dark-mode .main-content {
+  background: #18191a !important;
+  color: #f3f3f3 !important;
+}
+
+body.dark-mode .main-content .container {
+  background: transparent !important;
+  color: #f3f3f3 !important;
+}
+
 /* Collapsed state */
 body.sidebar-collapsed .sidebar {
   width: 72px;
@@ -263,9 +274,32 @@ body.sidebar-collapsed .sidebar-nav .nav-link i {
 }
 
 body.sidebar-collapsed .sidebar-user-info,
-body.sidebar-collapsed .sidebar-user-actions,
-body.sidebar-collapsed #darkModeToggle {
+body.sidebar-collapsed .sidebar-user-actions {
   display: none;
+}
+
+/* Dark mode toggle - show icon only when collapsed */
+body.sidebar-collapsed #darkModeToggle {
+  width: 100%;
+  padding: 0.5rem;
+  justify-content: center;
+}
+
+body.sidebar-collapsed #darkModeToggle .dark-mode-text,
+body.sidebar-collapsed #darkModeToggle .dark-mode-switch {
+  display: none;
+}
+
+body.sidebar-collapsed #darkModeToggle span:first-child {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+body.sidebar-collapsed #darkModeToggle i {
+  margin: 0 !important;
+  font-size: 1.2rem;
 }
 
 body.sidebar-collapsed .sidebar-user {
