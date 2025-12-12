@@ -92,9 +92,6 @@ if ($student && $conn) {
           <a class="nav-link <?php echo nav_active('notifications.php'); ?>" href="notifications.php">
             <i class="bi bi-bell"></i>
             <span>Notifications</span>
-            <?php if ($unreadCount > 0): ?>
-              <span class="notification-badge"><?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?></span>
-            <?php endif; ?>
           </a>
         </li>
         <li class="nav-item">
@@ -117,7 +114,21 @@ if ($student && $conn) {
             </div>
           <?php endif; ?>
           <div class="sidebar-user-info">
-            <div class="sidebar-user-name"><?php echo htmlspecialchars($student['StudentName']); ?></div>
+            <div class="sidebar-user-name d-flex align-items-center justify-content-between">
+              <span><?php echo htmlspecialchars($student['StudentName']); ?></span>
+              <?php if ($unreadCount > 0): ?>
+                <a href="notifications.php" class="notification-bell-link position-relative" title="View Notifications">
+                  <i class="bi bi-bell-fill" style="color: #FFD700; font-size: 1.1rem;"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.2rem 0.4rem;">
+                    <?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?>
+                  </span>
+                </a>
+              <?php else: ?>
+                <a href="notifications.php" class="notification-bell-link" title="View Notifications">
+                  <i class="bi bi-bell" style="color: rgba(255, 255, 255, 0.7); font-size: 1.1rem;"></i>
+                </a>
+              <?php endif; ?>
+            </div>
           </div>
         </div>
         <div class="sidebar-user-actions">
