@@ -40,5 +40,3 @@ function getImageErrorHandler() {
     $placeholder = getPlaceholderImage();
     return "this.onerror=null; this.src='$placeholder';";
 }
-?>
-

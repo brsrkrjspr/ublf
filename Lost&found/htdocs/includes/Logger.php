@@ -83,5 +83,3 @@ class Logger {
         return implode("\n", $logLines);
     }
 }
-?>
-
