@@ -46,7 +46,7 @@ unset($_SESSION['dashboard_msg']);
         <div class="col-md-4 col-lg-3">
           <div class="card h-100 shadow-sm">
             <?php if ($report['PhotoURL']): ?>
-              <img src="../<?php echo encodeImageUrl($report['PhotoURL']); ?>" class="card-img-top" alt="Lost Item Image" style="object-fit:cover;max-height:180px;" onerror="<?php echo getImageErrorHandler(); ?>">
+              <img src="<?php echo getImagePath($report['PhotoURL']); ?>" class="card-img-top" alt="Lost Item Image" style="object-fit:cover;max-height:180px;" onerror="<?php echo getImageErrorHandler(); ?>">
             <?php else: ?>
               <img src="<?php echo getPlaceholderImage(); ?>" class="card-img-top" alt="No Image">
             <?php endif; ?>
@@ -78,7 +78,7 @@ unset($_SESSION['dashboard_msg']);
               </div>
               <div class="modal-body">
                 <?php if ($report['PhotoURL']): ?>
-                  <img src="../<?php echo encodeImageUrl($report['PhotoURL']); ?>" class="img-fluid mb-3" alt="Lost Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
+                  <img src="<?php echo getImagePath($report['PhotoURL']); ?>" class="img-fluid mb-3" alt="Lost Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
                 <?php endif; ?>
                 <ul class="list-group list-group-flush mb-2">
                   <li class="list-group-item"><strong>Class:</strong> <?php echo htmlspecialchars($report['ClassName']); ?></li>

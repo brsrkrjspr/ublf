@@ -223,12 +223,12 @@ if ($type === 'photo' && $id) {
     }
 } elseif ($type === 'found' && $id) {
     // Get found item info
-    $itemStmt = $conn->prepare('SELECT ItemName, Description FROM item WHERE ItemID = :id');
+    $itemStmt = $conn->prepare('SELECT ItemName, Description FROM `item` WHERE ItemID = :id');
     $itemStmt->execute(['id' => $id]);
     $item = $itemStmt->fetch(PDO::FETCH_ASSOC);
     
     if ($action === 'approve') {
-        $stmt = $conn->prepare('UPDATE item SET StatusConfirmed = 1, UpdatedAt = CURRENT_TIMESTAMP WHERE ItemID = :id');
+        $stmt = $conn->prepare('UPDATE `item` SET StatusConfirmed = 1, UpdatedAt = CURRENT_TIMESTAMP WHERE ItemID = :id');
         $stmt->execute(['id' => $id]);
         $msg = 'Found item report approved.';
         // Note: Found items are reported by admins, so no user notification needed
@@ -245,7 +245,7 @@ if ($type === 'photo' && $id) {
         
         // Trigger match detection for this newly approved found item
         // Get full item details for match detection
-        $fullItemStmt = $conn->prepare('SELECT i.*, ic.ClassName FROM item i LEFT JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID WHERE i.ItemID = :id');
+        $fullItemStmt = $conn->prepare('SELECT i.*, ic.ClassName FROM `item` i LEFT JOIN `itemclass` ic ON i.ItemClassID = ic.ItemClassID WHERE i.ItemID = :id');
         $fullItemStmt->execute(['id' => $id]);
         $fullItem = $fullItemStmt->fetch(PDO::FETCH_ASSOC);
         
@@ -260,7 +260,7 @@ if ($type === 'photo' && $id) {
             ], 'found');
         }
     } elseif ($action === 'reject') {
-        $stmt = $conn->prepare('UPDATE item SET StatusConfirmed = -1, UpdatedAt = CURRENT_TIMESTAMP WHERE ItemID = :id');
+        $stmt = $conn->prepare('UPDATE `item` SET StatusConfirmed = -1, UpdatedAt = CURRENT_TIMESTAMP WHERE ItemID = :id');
         $stmt->execute(['id' => $id]);
         $msg = 'Found item report rejected.';
         // Note: Found items are reported by admins, so no user notification needed

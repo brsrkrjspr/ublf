@@ -33,7 +33,7 @@ if ($conn === null) {
       $foundWhere[] = 'c.ClassName LIKE :class';
       $foundParams['class'] = '%' . $_GET['found_class'] . '%';
     }
-    $foundSql = 'SELECT i.ItemID, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
+    $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
     if ($foundWhere) {
       $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
     }
@@ -43,8 +43,21 @@ if ($conn === null) {
         $stmt = $conn->prepare($foundSql);
         $stmt->execute($foundParams);
         $foundItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Debug: Log if no items found
+        if (empty($foundItems)) {
+            error_log("Found Items: No approved items found. Query: " . $foundSql);
+            // Check if there are any items at all (approved or not)
+            $checkStmt = $conn->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN StatusConfirmed = 1 THEN 1 ELSE 0 END) as approved FROM `item`');
+            $checkStmt->execute();
+            $stats = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            error_log("Found Items Stats: Total items: " . ($stats['total'] ?? 0) . ", Approved: " . ($stats['approved'] ?? 0));
+        }
+    } catch (PDOException $e) {
+        error_log("Found Items SQL Error: " . $e->getMessage() . " | SQL: " . $foundSql);
+        $foundItems = [];
     } catch (Exception $e) {
-        error_log("Found Items SQL Error: " . $e->getMessage());
+        error_log("Found Items Error: " . $e->getMessage());
         $foundItems = [];
     }
 
