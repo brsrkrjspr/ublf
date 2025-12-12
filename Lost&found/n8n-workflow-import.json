@@ -84,7 +84,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://ublf.x10.mx/api/v1/reports?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
+        "url": "=https://ublf-2.onrender.com/api/v1/reports?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {
@@ -112,7 +112,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://ublf.x10.mx/api/v1/reports?studentNo={{ $('Process Message').first().json.studentNo }}",
+        "url": "=https://ublf-2.onrender.com/api/v1/reports?studentNo={{ $('Process Message').first().json.studentNo }}",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {
@@ -140,7 +140,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://ublf.x10.mx/api/v1/items?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
+        "url": "=https://ublf-2.onrender.com/api/v1/items?search={{ $('Process Message').first().json.entities.itemName || $('Process Message').first().json.originalMessage }}",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {

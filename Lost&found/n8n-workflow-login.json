@@ -28,7 +28,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://ublf.x10.mx/api/v1/webhooks",
+        "url": "=https://ublf-2.onrender.com/api/v1/webhooks",
         "authentication": "headerAuth",
         "sendHeaders": true,
         "headerParameters": {

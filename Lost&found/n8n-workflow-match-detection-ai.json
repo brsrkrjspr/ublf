@@ -28,7 +28,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://ublf.x10.mx/api/v1/reports",
+        "url": "=https://ublf-2.onrender.com/api/v1/reports",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -136,7 +136,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://ublf.x10.mx/api/v1/webhooks",
+        "url": "=https://ublf-2.onrender.com/api/v1/webhooks",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
