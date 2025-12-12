@@ -36,6 +36,9 @@ CREATE TABLE `admin` (
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 LOCK TABLES `admin` WRITE;
+-- NOTE: Default admin password hash may not match 'admin123'
+-- After importing, run fix_admin_password.php to set correct password
+-- Default admin: username='admin', password='admin123' (needs to be set via fix script)
 INSERT INTO `admin` VALUES (1,'admin','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','admin@example.com','Admin User','2025-07-11 16:24:36'),(2,'AAAA','$2y$10$VdwVqv6a/JIMORjlFTe4A..QufMNIbkvxI7hNBO/d7LNiY1wRg376','asadada@gmail.com','AAAA','2025-07-11 18:04:42');
 UNLOCK TABLES;
 
