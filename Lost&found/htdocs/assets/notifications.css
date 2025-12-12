@@ -28,8 +28,8 @@
 }
 
 .notification-dropdown {
-  min-width: 350px;
-  max-width: 400px;
+  min-width: 380px;
+  max-width: 450px;
   border-radius: 1rem;
   border: none;
   box-shadow: 0 8px 32px rgba(128,0,0,0.15);
@@ -56,6 +56,10 @@
   border-bottom: 1px solid #e9ecef;
   transition: background-color 0.2s;
   cursor: pointer;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  text-overflow: clip;
 }
 
 .notification-item:hover {
@@ -132,6 +136,9 @@
   font-size: 0.875rem;
   margin-bottom: 0.5rem;
   line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .notification-time {
@@ -296,8 +303,8 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .notification-dropdown {
-    min-width: 300px;
-    max-width: 350px;
+    min-width: 320px;
+    max-width: 380px;
   }
   
   .notification-item {
@@ -337,8 +344,8 @@
 
 @media (max-width: 576px) {
   .notification-dropdown {
-    min-width: 280px;
-    max-width: 320px;
+    min-width: 300px;
+    max-width: 340px;
   }
   
   .notification-item {

@@ -76,7 +76,7 @@ function nav_active($page) {
                 </span>
               <?php endif; ?>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown" style="width: 350px; max-height: 400px; overflow-y: auto;">
+            <ul class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown" style="min-width: 380px; max-width: 450px; max-height: 500px; overflow-y: auto;">
               <li><h6 class="dropdown-header">Notifications</h6></li>
               <?php
               $notifications = [];
@@ -91,12 +91,12 @@ function nav_active($page) {
                 foreach ($notifications as $notif):
               ?>
                 <li>
-                  <a class="dropdown-item notification-item" href="#" data-notification-id="<?php echo $notif['NotificationID']; ?>">
+                  <a class="dropdown-item notification-item" href="#" data-notification-id="<?php echo $notif['NotificationID']; ?>" style="white-space: normal; word-wrap: break-word;">
                     <div class="d-flex align-items-start">
-                      <i class="<?php echo Notification::getIcon($notif['Type']); ?> me-2 mt-1"></i>
-                      <div class="flex-grow-1">
-                        <div class="fw-bold small"><?php echo htmlspecialchars($notif['Title']); ?></div>
-                        <div class="small text-muted"><?php echo htmlspecialchars($notif['Message']); ?></div>
+                      <i class="<?php echo Notification::getIcon($notif['Type']); ?> me-2 mt-1 flex-shrink-0" style="font-size: 1.1rem;"></i>
+                      <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="fw-bold small mb-1" style="word-wrap: break-word;"><?php echo htmlspecialchars($notif['Title']); ?></div>
+                        <div class="small text-muted mb-1" style="word-wrap: break-word; white-space: normal; line-height: 1.4;"><?php echo htmlspecialchars($notif['Message']); ?></div>
                         <div class="small text-muted"><?php echo Notification::formatTime($notif['CreatedAt']); ?></div>
                       </div>
                     </div>
