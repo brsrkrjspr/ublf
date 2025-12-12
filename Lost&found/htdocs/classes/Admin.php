@@ -135,32 +135,32 @@ class Admin {
         $stats = [];
 
         // Total students
-        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM student");
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM `student`");
         $stmt->execute();
         $stats['totalStudents'] = $stmt->fetchColumn();
 
         // Pending photo approvals (using ProfilePhoto instead of PhotoURL)
-        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM student WHERE ProfilePhoto IS NOT NULL AND PhotoConfirmed = 0");
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM `student` WHERE ProfilePhoto IS NOT NULL AND PhotoConfirmed = 0");
         $stmt->execute();
         $stats['pendingPhotoApprovals'] = $stmt->fetchColumn();
 
         // Pending lost item approvals (using StatusConfirmed instead of ReportStatusID)
-        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM reportitem WHERE StatusConfirmed = 0");
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM `reportitem` WHERE StatusConfirmed = 0");
         $stmt->execute();
         $stats['pendingLostApprovals'] = $stmt->fetchColumn();
 
         // Pending found item approvals (using StatusConfirmed instead of StatusID)
-        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM item WHERE StatusConfirmed = 0");
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM `item` WHERE StatusConfirmed = 0");
         $stmt->execute();
         $stats['pendingFoundApprovals'] = $stmt->fetchColumn();
 
         // Total lost items
-        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM reportitem WHERE StatusConfirmed = 1");
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM `reportitem` WHERE StatusConfirmed = 1");
         $stmt->execute();
         $stats['totalLostItems'] = $stmt->fetchColumn();
 
         // Total found items
-        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM item WHERE StatusConfirmed = 1");
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM `item` WHERE StatusConfirmed = 1");
         $stmt->execute();
         $stats['totalFoundItems'] = $stmt->fetchColumn();
 
@@ -175,8 +175,8 @@ class Admin {
 
         // Pending photo approvals
         $stmt = $this->conn->prepare("
-            SELECT s.StudentNo, s.StudentName, s.ProfilePhoto, s.Email 
-            FROM student s 
+            SELECT s.StudentNo, s.StudentName, s.ProfilePhoto, s.Email
+            FROM `student` s
             WHERE s.ProfilePhoto IS NOT NULL AND s.PhotoConfirmed = 0
             ORDER BY s.StudentNo
         ");
@@ -187,9 +187,9 @@ class Admin {
         $stmt = $this->conn->prepare("
             SELECT ri.ReportID, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.ReportStatusID,
                    s.StudentName, ic.ClassName
-            FROM reportitem ri
-            JOIN student s ON ri.StudentNo = s.StudentNo
-            JOIN itemclass ic ON ri.ItemClassID = ic.ItemClassID
+            FROM `reportitem` ri
+            JOIN `student` s ON ri.StudentNo = s.StudentNo
+            JOIN `itemclass` ic ON ri.ItemClassID = ic.ItemClassID
             WHERE ri.StatusConfirmed = 0
             ORDER BY ri.ReportID DESC
         ");
@@ -200,8 +200,8 @@ class Admin {
         $stmt = $this->conn->prepare("
             SELECT i.ItemID, i.ItemName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.StatusID,
                    ic.ClassName
-            FROM item i
-            JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
+            FROM `item` i
+            JOIN `itemclass` ic ON i.ItemClassID = ic.ItemClassID
             WHERE i.StatusConfirmed = 0
             ORDER BY i.ItemID DESC
         ");
@@ -220,7 +220,7 @@ class Admin {
         // Completed photo approvals (approved or rejected)
         $stmt = $this->conn->prepare("
             SELECT s.StudentNo, s.StudentName, s.ProfilePhoto, s.Email, s.PhotoConfirmed, s.UpdatedAt
-            FROM student s 
+            FROM `student` s 
             WHERE s.ProfilePhoto IS NOT NULL AND s.PhotoConfirmed IN (1, -1)
             ORDER BY s.StudentNo
         ");
@@ -231,9 +231,9 @@ class Admin {
         $stmt = $this->conn->prepare("
             SELECT ri.ReportID, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.ReportStatusID,
                    ri.StatusConfirmed, ri.UpdatedAt, s.StudentName, s.StudentNo, ic.ClassName
-            FROM reportitem ri
-            JOIN student s ON ri.StudentNo = s.StudentNo
-            JOIN itemclass ic ON ri.ItemClassID = ic.ItemClassID
+            FROM `reportitem` ri
+            JOIN `student` s ON ri.StudentNo = s.StudentNo
+            JOIN `itemclass` ic ON ri.ItemClassID = ic.ItemClassID
             WHERE ri.StatusConfirmed IN (1, -1)
             ORDER BY ri.ReportID DESC
         ");
@@ -244,8 +244,8 @@ class Admin {
         $stmt = $this->conn->prepare("
             SELECT i.ItemID, i.ItemName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.StatusID,
                    i.StatusConfirmed, i.UpdatedAt, ic.ClassName
-            FROM item i
-            JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
+            FROM `item` i
+            JOIN `itemclass` ic ON i.ItemClassID = ic.ItemClassID
             WHERE i.StatusConfirmed IN (1, -1)
             ORDER BY i.ItemID DESC
         ");
@@ -284,7 +284,7 @@ class Admin {
         if (!$this->conn) {
             return [];
         }
-        $stmt = $this->conn->prepare("SELECT p.*, s.StudentName, s.Email FROM profile_photo_history p JOIN student s ON p.StudentNo = s.StudentNo WHERE p.Status IN (1, -1) ORDER BY p.SubmittedAt DESC");
+        $stmt = $this->conn->prepare("SELECT p.*, s.StudentName, s.Email FROM `profile_photo_history` p JOIN `student` s ON p.StudentNo = s.StudentNo WHERE p.Status IN (1, -1) ORDER BY p.SubmittedAt DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -293,7 +293,7 @@ class Admin {
         if (!$this->conn) {
             return [];
         }
-        $stmt = $this->conn->prepare("SELECT p.*, s.StudentName, s.Email FROM profile_photo_history p JOIN student s ON p.StudentNo = s.StudentNo WHERE p.Status = 0 ORDER BY p.SubmittedAt DESC");
+        $stmt = $this->conn->prepare("SELECT p.*, s.StudentName, s.Email FROM `profile_photo_history` p JOIN `student` s ON p.StudentNo = s.StudentNo WHERE p.Status = 0 ORDER BY p.SubmittedAt DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

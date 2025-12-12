@@ -3,7 +3,7 @@ require_once __DIR__ . '/../includes/Database.php';
 
 class Item {
     private $conn;
-    private $table = 'item';
+    private $table = '`item`';
 
     public function __construct() {
         $database = new Database();
@@ -38,7 +38,7 @@ class Item {
 
     private function getOrCreateItemClass($className) {
         // Check if class exists
-        $stmt = $this->conn->prepare('SELECT ItemClassID FROM itemclass WHERE ClassName = :className LIMIT 1');
+        $stmt = $this->conn->prepare('SELECT ItemClassID FROM `itemclass` WHERE ClassName = :className LIMIT 1');
         $stmt->execute(['className' => $className]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -46,7 +46,7 @@ class Item {
             return $row['ItemClassID'];
         } else {
             // Create new class
-            $stmt = $this->conn->prepare('INSERT INTO itemclass (ClassName) VALUES (:className)');
+            $stmt = $this->conn->prepare('INSERT INTO `itemclass` (ClassName) VALUES (:className)');
             $stmt->execute(['className' => $className]);
             return $this->conn->lastInsertId();
         }
@@ -56,7 +56,7 @@ class Item {
         $query = "SELECT i.ItemID, i.ItemName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.StatusConfirmed,
                          ic.ClassName
                   FROM {$this->table} i
-                  JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
+                  JOIN `itemclass` ic ON i.ItemClassID = ic.ItemClassID
                   WHERE i.StatusConfirmed = 1
                   ORDER BY i.ItemID DESC";
         
@@ -76,7 +76,7 @@ class Item {
     public function getById($itemID) {
         $query = "SELECT i.*, ic.ClassName
                   FROM {$this->table} i
-                  JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
+                  JOIN `itemclass` ic ON i.ItemClassID = ic.ItemClassID
                   WHERE i.ItemID = :itemID";
         
         $stmt = $this->conn->prepare($query);
@@ -111,7 +111,7 @@ class Item {
             $query = "SELECT i.ItemID, i.ItemName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.StatusConfirmed,
                              ic.ClassName
                       FROM {$this->table} i
-                      JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
+                      JOIN `itemclass` ic ON i.ItemClassID = ic.ItemClassID
                       WHERE i.StatusConfirmed = 1 AND 
                             (i.ItemName LIKE :searchTerm OR i.Description LIKE :searchTerm OR i.LocationFound LIKE :searchTerm)";
             
@@ -140,7 +140,7 @@ class Item {
         }
         // Get ALL classes from itemclass table, not just ones with approved items
         $query = "SELECT DISTINCT ic.ClassName 
-                  FROM itemclass ic 
+                  FROM `itemclass` ic 
                   ORDER BY ic.ClassName";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -158,7 +158,7 @@ class Item {
         $query = "SELECT i.ItemID, i.ItemName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL,
                          ic.ClassName
                   FROM {$this->table} i
-                  JOIN itemclass ic ON i.ItemClassID = ic.ItemClassID
+                  JOIN `itemclass` ic ON i.ItemClassID = ic.ItemClassID
                   WHERE i.StatusConfirmed = 1 AND 
                         (i.ItemName LIKE :searchTerm OR i.Description LIKE :searchTerm)";
         

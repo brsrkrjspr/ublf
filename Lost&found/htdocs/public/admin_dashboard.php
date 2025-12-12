@@ -119,7 +119,7 @@ if ($section === 'itemmgmt') {
     $catId = intval($_POST['delete_id'] ?? 0);
     if ($catId) {
       // Optionally: check if in use
-      $stmt = $conn->prepare('SELECT COUNT(*) FROM reportitem WHERE ItemClassID = :id');
+      $stmt = $conn->prepare('SELECT COUNT(*) FROM `reportitem` WHERE ItemClassID = :id');
       $stmt->execute(['id' => $catId]);
       $inUse = $stmt->fetchColumn();
       if ($inUse > 0) {
@@ -189,7 +189,7 @@ if ($section === 'itemmgmt') {
     $statusId = intval($_POST['delete_status_id'] ?? 0);
     if ($statusId) {
       // Optionally: check if in use
-      $stmt = $conn->prepare('SELECT COUNT(*) FROM reportitem WHERE ReportStatusID = :id');
+      $stmt = $conn->prepare('SELECT COUNT(*) FROM `reportitem` WHERE ReportStatusID = :id');
       $stmt->execute(['id' => $statusId]);
       $inUse = $stmt->fetchColumn();
       if ($inUse > 0) {
@@ -236,7 +236,7 @@ if ($section === 'site') {
     $new = $_POST['new_password'] ?? '';
     $confirm = $_POST['confirm_password'] ?? '';
     $adminID = $_SESSION['admin']['AdminID'];
-    $stmt = $conn->prepare('SELECT PasswordHash FROM Admin WHERE AdminID = :id');
+    $stmt = $conn->prepare('SELECT PasswordHash FROM `admin` WHERE AdminID = :id');
     $stmt->execute(['id' => $adminID]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row || !password_verify($current, $row['PasswordHash'])) {
@@ -261,7 +261,7 @@ if ($section === 'students') {
   $studentMsg = '';
   $search = trim($_GET['search'] ?? '');
   $where = $search ? 'WHERE StudentName LIKE :search OR StudentNo LIKE :search OR Email LIKE :search' : '';
-  $stmt = $conn->prepare('SELECT * FROM student ' . $where . ' ORDER BY StudentNo');
+  $stmt = $conn->prepare('SELECT * FROM `student` ' . $where . ' ORDER BY StudentNo');
   if ($search) $stmt->execute(['search' => "%$search%"]); else $stmt->execute();
   $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
   // Handle deactivate/reactivate/delete
@@ -270,7 +270,7 @@ if ($section === 'students') {
       $id = $_POST['student_no'] ?? '';
       try {
         // Check if Active column exists
-        $checkColumn = $conn->query("SHOW COLUMNS FROM student LIKE 'Active'");
+        $checkColumn = $conn->query("SHOW COLUMNS FROM `student` LIKE 'Active'");
         if ($checkColumn->rowCount() > 0) {
           $stmt = $conn->prepare('UPDATE student SET Active = 0 WHERE StudentNo = :id');
           $stmt->execute(['id' => $id]);
@@ -285,7 +285,7 @@ if ($section === 'students') {
       $id = $_POST['student_no'] ?? '';
       try {
         // Check if Active column exists
-        $checkColumn = $conn->query("SHOW COLUMNS FROM student LIKE 'Active'");
+        $checkColumn = $conn->query("SHOW COLUMNS FROM `student` LIKE 'Active'");
         if ($checkColumn->rowCount() > 0) {
           $stmt = $conn->prepare('UPDATE student SET Active = 1 WHERE StudentNo = :id');
           $stmt->execute(['id' => $id]);
@@ -300,26 +300,26 @@ if ($section === 'students') {
       $id = $_POST['student_no'] ?? '';
       try {
         // Check if student has related data that would prevent deletion
-        $checkReports = $conn->prepare('SELECT COUNT(*) FROM reportitem WHERE StudentNo = :id');
+        $checkReports = $conn->prepare('SELECT COUNT(*) FROM `reportitem` WHERE StudentNo = :id');
         $checkReports->execute(['id' => $id]);
         $reportCount = $checkReports->fetchColumn();
         
         if ($reportCount > 0) {
           // Delete related reports first (cascade manually)
-          $deleteReports = $conn->prepare('DELETE FROM reportitem WHERE StudentNo = :id');
+          $deleteReports = $conn->prepare('DELETE FROM `reportitem` WHERE StudentNo = :id');
           $deleteReports->execute(['id' => $id]);
         }
         
         // Delete related notifications (should cascade automatically, but doing it manually for safety)
-        $deleteNotifications = $conn->prepare('DELETE FROM notifications WHERE StudentNo = :id');
+        $deleteNotifications = $conn->prepare('DELETE FROM `notifications` WHERE StudentNo = :id');
         $deleteNotifications->execute(['id' => $id]);
         
         // Delete related profile photo history (should cascade automatically, but doing it manually for safety)
-        $deletePhotos = $conn->prepare('DELETE FROM profile_photo_history WHERE StudentNo = :id');
+        $deletePhotos = $conn->prepare('DELETE FROM `profile_photo_history` WHERE StudentNo = :id');
         $deletePhotos->execute(['id' => $id]);
         
         // Now delete the student
-        $stmt = $conn->prepare('DELETE FROM student WHERE StudentNo = :id');
+        $stmt = $conn->prepare('DELETE FROM `student` WHERE StudentNo = :id');
         $stmt->execute(['id' => $id]);
         
         if ($stmt->rowCount() > 0) {
@@ -340,7 +340,7 @@ if ($section === 'students') {
     }
     // Refresh the student list after action
     $where = $search ? 'WHERE StudentName LIKE :search OR StudentNo LIKE :search OR Email LIKE :search' : '';
-    $stmt = $conn->prepare('SELECT * FROM student ' . $where . ' ORDER BY StudentNo');
+    $stmt = $conn->prepare('SELECT * FROM `student` ' . $where . ' ORDER BY StudentNo');
     if ($search) $stmt->execute(['search' => "%$search%"]); else $stmt->execute();
     $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
@@ -355,7 +355,7 @@ if ($section === 'export') {
     $out = fopen('php://output', 'w');
     if ($type === 'lost') {
       fputcsv($out, ['ReportID','ItemName','ClassName','Description','DateOfLoss','LostLocation','StudentNo']);
-      $stmt = $conn->query('SELECT r.ReportID, r.ItemName, c.ClassName, r.Description, r.DateOfLoss, r.LostLocation, r.StudentNo FROM reportitem r JOIN itemclass c ON r.ItemClassID = c.ItemClassID');
+      $stmt = $conn->query('SELECT r.ReportID, r.ItemName, c.ClassName, r.Description, r.DateOfLoss, r.LostLocation, r.StudentNo FROM `reportitem` r JOIN `itemclass` c ON r.ItemClassID = c.ItemClassID');
       while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) fputcsv($out, $row);
     } elseif ($type === 'found') {
       fputcsv($out, ['ItemID','ItemName','ClassName','Description','DateFound','LocationFound','AdminID']);
@@ -363,7 +363,7 @@ if ($section === 'export') {
       while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) fputcsv($out, $row);
     } elseif ($type === 'students') {
       fputcsv($out, ['StudentNo','StudentName','Email','PhoneNo','Active']);
-      $stmt = $conn->query('SELECT StudentNo, StudentName, Email, PhoneNo, Active FROM student');
+      $stmt = $conn->query('SELECT StudentNo, StudentName, Email, PhoneNo, Active FROM `student`');
       while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) fputcsv($out, $row);
     }
     fclose($out);
