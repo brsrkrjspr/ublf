@@ -26,15 +26,25 @@ class Admin {
             }
             return ['success' => false, 'message' => 'Database unavailable. Use admin/admin123 for testing.'];
         }
-        $query = "SELECT * FROM {$this->table} WHERE Username = :username LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute(['username' => $username]);
-        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($admin && password_verify($password, $admin['PasswordHash'])) {
+        try {
+            $query = "SELECT * FROM {$this->table} WHERE Username = :username LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute(['username' => $username]);
+            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$admin) {
+                return ['success' => false, 'message' => 'Admin user not found. Please ensure the admin account exists in the database.'];
+            }
+            
+            if (!password_verify($password, $admin['PasswordHash'])) {
+                return ['success' => false, 'message' => 'Invalid password. Please check your password or run fix_admin_password.php to reset it.'];
+            }
+            
             return ['success' => true, 'admin' => $admin];
-        } else {
-            return ['success' => false, 'message' => 'Invalid username or password.'];
+        } catch (PDOException $e) {
+            error_log("Admin login error: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Database error during login. Please try again.'];
         }
     }
 

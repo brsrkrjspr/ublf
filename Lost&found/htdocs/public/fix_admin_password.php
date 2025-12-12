@@ -30,8 +30,14 @@ $newPassword = 'admin123';
 $passwordHash = password_hash($newPassword, PASSWORD_BCRYPT);
 
 try {
+    // Check if admin table exists
+    $stmt = $conn->query("SHOW TABLES LIKE 'admin'");
+    if ($stmt->rowCount() === 0) {
+        die("<h2>❌ Error</h2><p>The 'admin' table does not exist. Please import the database schema first.</p>");
+    }
+    
     // Check if admin exists
-    $stmt = $conn->prepare("SELECT AdminID, Username FROM admin WHERE Username = :username");
+    $stmt = $conn->prepare("SELECT AdminID, Username, PasswordHash FROM admin WHERE Username = :username");
     $stmt->execute(['username' => $username]);
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -48,10 +54,20 @@ try {
             echo "<p>Admin password has been updated successfully.</p>";
             echo "<p><strong>Username:</strong> admin</p>";
             echo "<p><strong>Password:</strong> admin123</p>";
+            
+            // Verify the password works
+            $verify = password_verify($newPassword, $passwordHash);
+            echo "<p>Password verification: " . ($verify ? "✅ PASSED" : "❌ FAILED") . "</p>";
+            
             echo "<p><a href='admin_login.php'>Go to Admin Login</a></p>";
+            echo "<p><a href='check_admin_account.php?key=" . $securityKey . "'>Check Admin Account</a></p>";
         } else {
             echo "<h2>❌ Error</h2>";
-            echo "<p>Failed to update admin password.</p>";
+            echo "<p>Failed to update admin password. Check database permissions.</p>";
+            $errorInfo = $stmt->errorInfo();
+            if ($errorInfo) {
+                echo "<p>SQL Error: " . htmlspecialchars($errorInfo[2]) . "</p>";
+            }
         }
     } else {
         // Create new admin if doesn't exist
@@ -68,23 +84,28 @@ try {
             echo "<p>Admin account has been created successfully.</p>";
             echo "<p><strong>Username:</strong> admin</p>";
             echo "<p><strong>Password:</strong> admin123</p>";
+            
+            // Verify the password works
+            $verify = password_verify($newPassword, $passwordHash);
+            echo "<p>Password verification: " . ($verify ? "✅ PASSED" : "❌ FAILED") . "</p>";
+            
             echo "<p><a href='admin_login.php'>Go to Admin Login</a></p>";
+            echo "<p><a href='check_admin_account.php?key=" . $securityKey . "'>Check Admin Account</a></p>";
         } else {
             echo "<h2>❌ Error</h2>";
-            echo "<p>Failed to create admin account.</p>";
+            echo "<p>Failed to create admin account. Check database permissions.</p>";
+            $errorInfo = $stmt->errorInfo();
+            if ($errorInfo) {
+                echo "<p>SQL Error: " . htmlspecialchars($errorInfo[2]) . "</p>";
+            }
         }
     }
-    
-    // Verify the password works
-    echo "<hr>";
-    echo "<h3>Verification:</h3>";
-    $testHash = password_hash($newPassword, PASSWORD_BCRYPT);
-    $verify = password_verify($newPassword, $passwordHash);
-    echo "<p>Password verification test: " . ($verify ? "✅ PASSED" : "❌ FAILED") . "</p>";
     
 } catch (PDOException $e) {
     echo "<h2>❌ Database Error</h2>";
     echo "<p>Error: " . htmlspecialchars($e->getMessage()) . "</p>";
+    echo "<p>Code: " . htmlspecialchars($e->getCode()) . "</p>";
+    echo "<p>SQL State: " . htmlspecialchars($e->errorInfo[0] ?? 'N/A') . "</p>";
 }
 
 echo "<hr>";
