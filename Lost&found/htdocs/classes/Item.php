@@ -98,7 +98,7 @@ class Item {
     }
 
     public function reject($itemID, $adminID) {
-        $query = "UPDATE {$this->table} SET StatusConfirmed = 2 WHERE ItemID = :itemID";
+        $query = "UPDATE {$this->table} SET StatusConfirmed = -1 WHERE ItemID = :itemID";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute(['itemID' => $itemID]);
     }
