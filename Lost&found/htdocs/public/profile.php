@@ -342,5 +342,6 @@ function togglePassword(inputId, btn) {
 }
 </script>
 <script src="../assets/notifications.js"></script>
+<?php include '../templates/footer.php'; ?>
 </body>
 </html> 

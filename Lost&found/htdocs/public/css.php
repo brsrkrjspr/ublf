@@ -4,7 +4,7 @@
  * Usage: <link href="css.php?file=ub.css" rel="stylesheet">
  */
 
-$allowedFiles = ['ub.css', 'UB.css', 'dashboard.css', 'dash.css', 'notifications.css', 'admin_dashboard.css', 'admin.css', 'profile.css'];
+$allowedFiles = ['ub.css', 'UB.css', 'dashboard.css', 'dash.css', 'notifications.css', 'admin_dashboard.css', 'admin.css', 'profile.css', 'sidebar.css'];
 $file = $_GET['file'] ?? '';
 
 if (empty($file) || !in_array($file, $allowedFiles)) {

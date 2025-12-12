@@ -888,5 +888,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+<?php include '../templates/footer.php'; ?>
 </body>
 </html> 
