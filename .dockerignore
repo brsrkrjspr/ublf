@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+Lost&found/*.md
+
+# Development files
+Lost&found/RUN-SERVER.bat
+Lost&found/start-server.bat
+Lost&found/start-server.ps1
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env.local
+.env.*.local
+
+# Test files
+test.zip
+*.zip
+

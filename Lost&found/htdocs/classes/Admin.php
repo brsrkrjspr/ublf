@@ -288,4 +288,3 @@ class Admin {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
-?> 
