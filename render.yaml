@@ -8,6 +8,18 @@ services:
     envVars:
       - key: APACHE_DOCUMENT_ROOT
         value: /var/www/html/Lost&found/htdocs/public
+      # Database configuration (Aiven MySQL)
+      # Note: These can also be set in Render Dashboard → Environment Variables
+      - key: DB_HOST
+        sync: false  # Set manually in Render Dashboard
+      - key: DB_PORT
+        sync: false  # Set manually in Render Dashboard
+      - key: DB_NAME
+        sync: false  # Set manually in Render Dashboard
+      - key: DB_USER
+        sync: false  # Set manually in Render Dashboard
+      - key: DB_PASS
+        sync: false  # Set manually in Render Dashboard (mark as secret)
     healthCheckPath: /
     autoDeploy: true
 
