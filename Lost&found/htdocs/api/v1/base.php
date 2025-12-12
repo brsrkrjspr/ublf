@@ -20,19 +20,9 @@ $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? $_GET['api_key'] ?? '';
 
 // Get API key from Config class
 $validApiKey = Config::get('API_KEY');
-// #region agent log
-$logFile = __DIR__ . '/../../debug.log';
-$logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'base.php:19', 'message' => 'API authentication check', 'data' => ['api_key_provided' => !empty($apiKey), 'api_key_length' => strlen($apiKey), 'valid_key_set' => !empty($validApiKey), 'keys_match' => $apiKey === $validApiKey], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'D'];
-@file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-// #endregion
 
 // Validate API key
 if (empty($apiKey) || $apiKey !== $validApiKey) {
-    // #region agent log
-    $logFile = __DIR__ . '/../../debug.log';
-    $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'base.php:26', 'message' => 'API authentication failed', 'data' => ['reason' => empty($apiKey) ? 'missing' : 'mismatch'], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'D'];
-    @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-    // #endregion
     http_response_code(401);
     echo json_encode([
         'success' => false,
@@ -40,11 +30,6 @@ if (empty($apiKey) || $apiKey !== $validApiKey) {
     ]);
     exit;
 }
-// #region agent log
-$logFile = __DIR__ . '/../../debug.log';
-$logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'base.php:33', 'message' => 'API authentication success', 'data' => ['authenticated' => true], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'D'];
-@file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-// #endregion
 
 // Include database and classes
 require_once __DIR__ . '/../../includes/Database.php';

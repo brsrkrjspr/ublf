@@ -14,12 +14,6 @@ $conn = $db->getConnection();
 $foundItems = [];
 $itemClasses = ['Electronics', 'Books', 'Clothing', 'Bags', 'ID Cards', 'Keys', 'Others'];
 
-// #region agent log
-$logPath = __DIR__ . '/../../.cursor/debug.log';
-$logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'location' => 'found_items.php:17', 'message' => 'DB connection check', 'data' => ['connIsNull' => ($conn === null)], 'timestamp' => time() * 1000];
-file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
-// #endregion
-
 if ($conn === null) {
     // Database connection failed - use default item classes
     error_log("Found Items: Database connection unavailable");
@@ -39,51 +33,18 @@ if ($conn === null) {
       $foundWhere[] = 'c.ClassName LIKE :class';
       $foundParams['class'] = '%' . $_GET['found_class'] . '%';
     }
-    $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
+    $foundSql = 'SELECT i.ItemID, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, a.AdminName, a.Email FROM Item i JOIN ItemClass c ON i.ItemClassID = c.ItemClassID JOIN Admin a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
     if ($foundWhere) {
       $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
     }
     $foundSql .= ' ORDER BY i.CreatedAt DESC';
     
-    // #region agent log
-    $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'found_items.php:42', 'message' => 'Before query execution', 'data' => ['sql' => $foundSql, 'params' => $foundParams, 'filters' => $_GET], 'timestamp' => time() * 1000];
-    file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
-    // #endregion
-    
     try {
         $stmt = $conn->prepare($foundSql);
         $stmt->execute($foundParams);
         $foundItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // #region agent log
-        $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'found_items.php:50', 'message' => 'After query execution', 'data' => ['resultCount' => count($foundItems), 'isEmpty' => empty($foundItems), 'firstItem' => $foundItems[0] ?? null], 'timestamp' => time() * 1000];
-        file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
-        // #endregion
-        
-        // Diagnostic: Check if items exist but aren't showing
-        if (empty($foundItems)) {
-            $countStmt = $conn->prepare('SELECT COUNT(*) FROM `item` WHERE StatusConfirmed = 1');
-            $countStmt->execute();
-            $totalApproved = $countStmt->fetchColumn();
-            
-            // #region agent log
-            $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'A', 'location' => 'found_items.php:58', 'message' => 'Empty results diagnostic', 'data' => ['totalApproved' => $totalApproved, 'queryReturnedZero' => true], 'timestamp' => time() * 1000];
-            file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
-            // #endregion
-            
-            if ($totalApproved > 0) {
-                error_log("Found Items Warning: Query returned 0 results but $totalApproved approved items exist. Possible data integrity issue.");
-            }
-        }
     } catch (Exception $e) {
-        // #region agent log
-        $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'C', 'location' => 'found_items.php:66', 'message' => 'Query exception', 'data' => ['error' => $e->getMessage(), 'sql' => $foundSql], 'timestamp' => time() * 1000];
-        file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
-        // #endregion
-        
         error_log("Found Items SQL Error: " . $e->getMessage());
-        error_log("Found Items SQL Query: " . $foundSql);
-        error_log("Found Items SQL Params: " . print_r($foundParams, true));
         $foundItems = [];
     }
 
@@ -100,11 +61,6 @@ if ($conn === null) {
         // Use default item classes already set above
     }
 }
-
-// #region agent log
-$logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B', 'location' => 'found_items.php:88', 'message' => 'Before rendering check', 'data' => ['itemsCount' => count($foundItems), 'countResult' => count($foundItems) > 0, 'isArray' => is_array($foundItems)], 'timestamp' => time() * 1000];
-file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
-// #endregion
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -149,12 +105,7 @@ file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
   </div>
   <div class="row g-4">
     <?php if (count($foundItems) > 0): ?>
-      <?php 
-      // #region agent log
-      $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'D', 'location' => 'found_items.php:133', 'message' => 'Rendering branch taken', 'data' => ['itemsCount' => count($foundItems)], 'timestamp' => time() * 1000];
-      file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
-      // #endregion
-      foreach ($foundItems as $idx => $item): ?>
+      <?php foreach ($foundItems as $idx => $item): ?>
         <div class="col-md-4 col-lg-3">
           <div class="card h-100 shadow-sm">
             <?php if ($item['PhotoURL']): ?>
@@ -165,11 +116,10 @@ file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
             <div class="card-body d-flex flex-column">
               <div class="d-flex align-items-center mb-2">
                 <i class="bi bi-shield-check me-2" style="font-size:1.2rem;color:#28a745;"></i>
-                <small class="text-muted"><?php echo htmlspecialchars($item['AdminName'] ?? 'Unknown'); ?> (Admin)</small>
+                <small class="text-muted"><?php echo htmlspecialchars($item['AdminName']); ?> (Admin)</small>
               </div>
-              <h5 class="card-title mb-1"><?php echo htmlspecialchars($item['ItemName'] ?? $item['ClassName'] ?? 'N/A'); ?></h5>
-              <p class="card-text small mb-2 text-muted"><?php echo htmlspecialchars($item['ClassName'] ?? 'N/A'); ?></p>
-              <p class="card-text small mb-2"><?php echo htmlspecialchars(mb_strimwidth($item['Description'] ?? '', 0, 60, '...')); ?></p>
+              <h5 class="card-title mb-1"><?php echo htmlspecialchars($item['ClassName']); ?></h5>
+              <p class="card-text small mb-2"><?php echo htmlspecialchars(mb_strimwidth($item['Description'], 0, 60, '...')); ?></p>
               <button class="btn btn-primary mt-auto" data-bs-toggle="modal" data-bs-target="#foundModal<?php echo $idx; ?>">View Details</button>
             </div>
           </div>
@@ -187,27 +137,20 @@ file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
                   <img src="../<?php echo encodeImageUrl($item['PhotoURL']); ?>" class="img-fluid mb-3" alt="Found Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
                 <?php endif; ?>
                 <ul class="list-group list-group-flush mb-2">
-                  <li class="list-group-item"><strong>Item Name:</strong> <?php echo htmlspecialchars($item['ItemName'] ?? 'N/A'); ?></li>
-                  <li class="list-group-item"><strong>Class:</strong> <?php echo htmlspecialchars($item['ClassName'] ?? 'N/A'); ?></li>
-                  <li class="list-group-item"><strong>Description:</strong> <?php echo htmlspecialchars($item['Description'] ?? 'N/A'); ?></li>
-                  <li class="list-group-item"><strong>Date Found:</strong> <?php echo htmlspecialchars($item['DateFound'] ?? 'N/A'); ?></li>
-                  <li class="list-group-item"><strong>Location Found:</strong> <?php echo htmlspecialchars($item['LocationFound'] ?? 'N/A'); ?></li>
-                  <li class="list-group-item"><strong>Reported By:</strong> <?php echo htmlspecialchars($item['AdminName'] ?? 'Unknown'); ?></li>
-                  <li class="list-group-item"><strong>Email:</strong> <?php echo htmlspecialchars($item['Email'] ?? 'N/A'); ?></li>
+                  <li class="list-group-item"><strong>Class:</strong> <?php echo htmlspecialchars($item['ClassName']); ?></li>
+                  <li class="list-group-item"><strong>Description:</strong> <?php echo htmlspecialchars($item['Description']); ?></li>
+                  <li class="list-group-item"><strong>Date Found:</strong> <?php echo htmlspecialchars($item['DateFound']); ?></li>
+                  <li class="list-group-item"><strong>Location Found:</strong> <?php echo htmlspecialchars($item['LocationFound']); ?></li>
+                  <li class="list-group-item"><strong>Reported By:</strong> <?php echo htmlspecialchars($item['AdminName']); ?></li>
+                  <li class="list-group-item"><strong>Email:</strong> <?php echo htmlspecialchars($item['Email']); ?></li>
                 </ul>
-                <div class="text-end text-muted small">Reported at: <?php echo htmlspecialchars($item['CreatedAt'] ?? 'N/A'); ?></div>
+                <div class="text-end text-muted small">Reported at: <?php echo htmlspecialchars($item['CreatedAt']); ?></div>
               </div>
             </div>
           </div>
         </div>
       <?php endforeach; ?>
     <?php else: ?>
-      <?php 
-      // #region agent log
-      $logData = ['sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'D', 'location' => 'found_items.php:178', 'message' => 'Empty branch taken', 'data' => ['itemsCount' => count($foundItems)], 'timestamp' => time() * 1000];
-      file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
-      // #endregion
-      ?>
       <div class="col-12"><p class="text-muted">No found items reported yet.</p></div>
     <?php endif; ?>
   </div>
@@ -215,4 +158,4 @@ file_put_contents($logPath, json_encode($logData) . "\n", FILE_APPEND);
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../assets/notifications.js"></script>
 </body>
-</html>
+</html> 

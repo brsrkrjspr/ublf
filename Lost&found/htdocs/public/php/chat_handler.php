@@ -63,11 +63,6 @@ $conversationHistory = $_SESSION['chat_history'];
 // Get n8n configuration from Config class
 $n8nWebhookUrl = Config::get('N8N_WEBHOOK_URL');
 $n8nApiKey = Config::get('N8N_API_KEY', '');
-// #region agent log
-$logFile = __DIR__ . '/../../debug.log';
-$logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'chat_handler.php:64', 'message' => 'Chatbot webhook config loaded', 'data' => ['webhook_url' => $n8nWebhookUrl, 'api_key_set' => !empty($n8nApiKey), 'student_no' => $studentNo], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'C'];
-@file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-// #endregion
 
 // Prepare data to send to n8n
 $payload = [
@@ -130,11 +125,6 @@ try {
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
         curl_close($ch);
-        // #region agent log
-        $logFile = __DIR__ . '/../../debug.log';
-        $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'chat_handler.php:125', 'message' => 'Chatbot webhook response received', 'data' => ['http_code' => $httpCode, 'curl_error' => $curlError, 'response_length' => strlen($response ?? ''), 'retry_count' => $retryCount], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'C'];
-        @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-        // #endregion
         
         // If successful, break out of retry loop
         if ($httpCode === 200 && !empty($response)) {
@@ -190,12 +180,6 @@ if ($httpCode !== 200) {
 
 // Parse n8n response
 $n8nResponse = json_decode($response, true);
-// #region agent log
-$logFile = __DIR__ . '/../../debug.log';
-$rawResponsePreview = substr($response, 0, 500);
-$logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'chat_handler.php:191', 'message' => 'Chatbot response parsing', 'data' => ['json_error' => json_last_error(), 'json_error_msg' => json_last_error_msg(), 'has_reply' => isset($n8nResponse['reply']), 'response_keys' => $n8nResponse ? array_keys($n8nResponse) : [], 'raw_response_preview' => $rawResponsePreview, 'full_response_size' => strlen($response)], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'F'];
-@file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-// #endregion
 
 if (json_last_error() !== JSON_ERROR_NONE) {
     // Invalid JSON response - log the full response for debugging
@@ -246,27 +230,6 @@ if (isset($n8nResponse['error'])) {
 // Return reply to frontend
 $reply = $n8nResponse['reply'] ?? $n8nResponse['message'] ?? 'I didn\'t understand that. Can you rephrase your question?';
 
-// #region agent log
-$logFile = __DIR__ . '/../../debug.log';
-$hasWaitMoment = stripos($reply, 'wait') !== false && (stripos($reply, 'moment') !== false || stripos($reply, 'check') !== false || stripos($reply, 'checking') !== false);
-$logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'chat_handler.php:245', 'message' => 'Final reply extracted', 'data' => ['reply' => substr($reply, 0, 200), 'reply_length' => strlen($reply), 'has_wait_moment' => $hasWaitMoment, 'response_data_keys' => isset($n8nResponse['data']) ? array_keys($n8nResponse['data']) : []], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'F'];
-@file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-// #endregion
-
-// Detect if response is a "wait a moment" message that indicates incomplete processing
-// This happens when n8n workflow responds too early before completing all processing
-if ($hasWaitMoment && strlen($reply) < 150) {
-    // #region agent log
-    $logFile = __DIR__ . '/../../debug.log';
-    $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'chat_handler.php:252', 'message' => 'Detected incomplete wait message', 'data' => ['original_reply' => $reply, 'action' => 'adding_follow_up_note'], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'F'];
-    @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-    // #endregion
-    
-    // Append a note that the user should send another message or wait
-    // This is a workaround - the proper fix is in the n8n workflow to not respond until processing is complete
-    $reply .= "\n\n(Processing may take a moment. If you don't see a complete response, please send your message again.)";
-}
-
 // Store assistant response in conversation history
 $_SESSION['chat_history'][] = [
     'role' => 'assistant',
@@ -278,12 +241,6 @@ $_SESSION['chat_history'][] = [
 if (count($_SESSION['chat_history']) > 10) {
     $_SESSION['chat_history'] = array_slice($_SESSION['chat_history'], -10);
 }
-
-// #region agent log
-$logFile = __DIR__ . '/../../debug.log';
-$logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'chat_handler.php:258', 'message' => 'Sending response to frontend', 'data' => ['reply_length' => strlen($reply), 'has_data' => isset($n8nResponse['data']), 'full_response' => json_encode(['reply' => $reply, 'data' => $n8nResponse['data'] ?? null])], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'F'];
-@file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-// #endregion
 
 echo json_encode([
     'reply' => $reply,
