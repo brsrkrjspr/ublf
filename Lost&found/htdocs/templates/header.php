@@ -116,57 +116,18 @@ if ($student && $conn) {
           <div class="sidebar-user-info">
             <div class="sidebar-user-name d-flex align-items-center justify-content-between">
               <span><?php echo htmlspecialchars($student['StudentName']); ?></span>
-              <div class="dropdown">
-                <?php if ($unreadCount > 0): ?>
-                  <button class="notification-bell-link position-relative btn p-0 border-0" type="button" id="sidebarNotificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="View Notifications">
-                    <i class="bi bi-bell-fill" style="color: #FFD700; font-size: 1.1rem;"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.2rem 0.4rem;">
-                      <?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?>
-                    </span>
-                  </button>
-                <?php else: ?>
-                  <button class="notification-bell-link btn p-0 border-0" type="button" id="sidebarNotificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="View Notifications">
-                    <i class="bi bi-bell" style="color: rgba(255, 255, 255, 0.7); font-size: 1.1rem;"></i>
-                  </button>
-                <?php endif; ?>
-                <ul class="dropdown-menu dropdown-menu-end sidebar-notification-dropdown" aria-labelledby="sidebarNotificationDropdown" style="min-width: 380px; max-width: 450px; max-height: 500px; overflow-y: auto;">
-                  <li><h6 class="dropdown-header">Notifications</h6></li>
-                  <?php
-                  $notifications = [];
-                  try {
-                      if ($conn) {
-                          require_once __DIR__ . '/../classes/Notification.php';
-                          $notification = new Notification($conn);
-                          $notifications = $notification->getUnread($student['StudentNo'], 5);
-                      }
-                  } catch (Exception $e) {
-                      $notifications = [];
-                  }
-                  if (count($notifications) > 0):
-                    foreach ($notifications as $notif):
-                  ?>
-                    <li>
-                      <a class="dropdown-item notification-item" href="#" data-notification-id="<?php echo $notif['NotificationID']; ?>" style="white-space: normal; word-wrap: break-word;">
-                        <div class="d-flex align-items-start">
-                          <i class="<?php echo Notification::getIcon($notif['Type']); ?> me-2 mt-1 flex-shrink-0" style="font-size: 1.1rem;"></i>
-                          <div class="flex-grow-1" style="min-width: 0;">
-                            <div class="fw-bold small mb-1" style="word-wrap: break-word;"><?php echo htmlspecialchars($notif['Title']); ?></div>
-                            <div class="small text-muted mb-1" style="word-wrap: break-word; white-space: normal; line-height: 1.4;"><?php echo htmlspecialchars($notif['Message']); ?></div>
-                            <div class="small text-muted"><?php echo Notification::formatTime($notif['CreatedAt']); ?></div>
-                          </div>
-                        </div>
-                      </a>
-                    </li>
-                  <?php 
-                    endforeach;
-                  else:
-                  ?>
-                    <li><span class="dropdown-item-text text-muted">No new notifications</span></li>
-                  <?php endif; ?>
-                  <li><hr class="dropdown-divider"></li>
-                  <li><a class="dropdown-item text-center" href="notifications.php">View All Notifications</a></li>
-                </ul>
-              </div>
+              <?php if ($unreadCount > 0): ?>
+                <button class="notification-bell-link position-relative btn p-0 border-0" type="button" data-bs-toggle="modal" data-bs-target="#notificationModal" title="View Notifications">
+                  <i class="bi bi-bell-fill" style="color: #FFD700; font-size: 1.1rem;"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; padding: 0.2rem 0.4rem;">
+                    <?php echo $unreadCount > 9 ? '9+' : $unreadCount; ?>
+                  </span>
+                </button>
+              <?php else: ?>
+                <button class="notification-bell-link btn p-0 border-0" type="button" data-bs-toggle="modal" data-bs-target="#notificationModal" title="View Notifications">
+                  <i class="bi bi-bell" style="color: rgba(255, 255, 255, 0.7); font-size: 1.1rem;"></i>
+                </button>
+              <?php endif; ?>
             </div>
           </div>
         </div>
@@ -245,9 +206,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Handle notification clicks in sidebar dropdown
-  const sidebarNotificationItems = document.querySelectorAll('.sidebar-notification-dropdown .notification-item');
-  sidebarNotificationItems.forEach(function(item) {
+  // Handle notification clicks in modal
+  const notificationModalItems = document.querySelectorAll('#notificationModal .notification-item');
+  notificationModalItems.forEach(function(item) {
     item.addEventListener('click', function(e) {
       e.preventDefault();
       const notificationId = this.getAttribute('data-notification-id');
