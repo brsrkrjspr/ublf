@@ -88,7 +88,7 @@ if (empty($itemClasses)) {
         <div class="col-md-4 col-lg-3">
           <div class="card h-100 shadow-sm">
             <?php if ($lost['PhotoURL']): ?>
-              <img src="../<?php echo encodeImageUrl($lost['PhotoURL']); ?>" class="card-img-top" alt="Lost Item Image" style="object-fit:cover;max-height:180px;" onerror="<?php echo getImageErrorHandler(); ?>">
+              <img src="<?php echo getImagePath($lost['PhotoURL']); ?>" class="card-img-top" alt="Lost Item Image" style="object-fit:cover;max-height:180px;" onerror="<?php echo getImageErrorHandler(); ?>">
             <?php else: ?>
               <img src="<?php echo getPlaceholderImage(); ?>" class="card-img-top" alt="No Image">
             <?php endif; ?>
@@ -96,7 +96,7 @@ if (empty($itemClasses)) {
               <div class="d-flex align-items-center mb-2">
                 <?php if (!empty($lost['ProfilePhoto']) && isset($lost['PhotoConfirmed']) && $lost['PhotoConfirmed'] == 1): ?>
                   <a href="view_profile.php?student_no=<?php echo htmlspecialchars($lost['StudentNo']); ?>" class="text-decoration-none">
-                    <img src="../<?php echo htmlspecialchars($lost['ProfilePhoto']); ?>" alt="Profile Photo" class="rounded-circle me-2" style="width:24px;height:24px;object-fit:cover;">
+                    <img src="<?php echo getImagePath($lost['ProfilePhoto']); ?>" alt="Profile Photo" class="rounded-circle me-2" style="width:24px;height:24px;object-fit:cover;" onerror="<?php echo getImageErrorHandler(); ?>">
                   </a>
                 <?php else: ?>
                   <i class="bi bi-person-circle me-2" style="font-size:1.2rem;color:#6c757d;"></i>
@@ -121,7 +121,7 @@ if (empty($itemClasses)) {
               </div>
               <div class="modal-body">
                 <?php if ($lost['PhotoURL']): ?>
-                  <img src="../<?php echo encodeImageUrl($lost['PhotoURL']); ?>" class="img-fluid mb-3" alt="Lost Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
+                  <img src="<?php echo getImagePath($lost['PhotoURL']); ?>" class="img-fluid mb-3" alt="Lost Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
                 <?php endif; ?>
                 <ul class="list-group list-group-flush mb-2">
                   <li class="list-group-item"><strong>Class:</strong> <?php echo htmlspecialchars($lost['ClassName']); ?></li>
@@ -132,7 +132,7 @@ if (empty($itemClasses)) {
                     <div class="d-flex align-items-center mt-1">
                       <?php if (!empty($lost['ProfilePhoto']) && isset($lost['PhotoConfirmed']) && $lost['PhotoConfirmed'] == 1): ?>
                         <a href="view_profile.php?student_no=<?php echo htmlspecialchars($lost['StudentNo']); ?>" class="text-decoration-none">
-                          <img src="../<?php echo htmlspecialchars($lost['ProfilePhoto']); ?>" alt="Profile Photo" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
+                          <img src="<?php echo getImagePath($lost['ProfilePhoto']); ?>" alt="Profile Photo" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;" onerror="<?php echo getImageErrorHandler(); ?>">
                         </a>
                       <?php else: ?>
                         <i class="bi bi-person-circle me-2" style="font-size:1.5rem;color:#6c757d;"></i>

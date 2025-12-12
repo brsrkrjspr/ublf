@@ -6,6 +6,52 @@
  */
 
 /**
+ * Get the correct image path based on deployment environment
+ * Handles both local development and Render deployment
+ * 
+ * @param string $photoURL The PhotoURL from database (e.g., "assets/uploads/file.jpg")
+ * @return string Properly formatted image path
+ */
+function getImagePath($photoURL) {
+    if (empty($photoURL)) {
+        return '';
+    }
+    
+    // If already a full URL (http/https), return as is
+    if (preg_match('/^https?:\/\//', $photoURL)) {
+        return $photoURL;
+    }
+    
+    // Remove leading slash if present
+    $photoURL = ltrim($photoURL, '/');
+    
+    // For Render deployment with Apache alias:
+    // - DocumentRoot is set to /var/www/html/Lost&found/htdocs/public
+    // - Apache alias /assets points to /var/www/html/Lost&found/htdocs/assets
+    // - So "assets/uploads/file.jpg" should be accessed as "/assets/uploads/file.jpg"
+    // - This works from any page since it's an absolute path from web root
+    
+    // Check if path already starts with ../
+    if (strpos($photoURL, '../') === 0) {
+        // Remove ../ prefix and use absolute path
+        $photoURL = str_replace('../', '', $photoURL);
+    }
+    
+    // Ensure path starts with / for absolute path from web root
+    if (strpos($photoURL, 'assets/') === 0) {
+        return encodeImageUrl('/' . $photoURL);
+    }
+    
+    // If it doesn't start with assets/, add it
+    if (strpos($photoURL, '/') !== 0) {
+        return encodeImageUrl('/' . $photoURL);
+    }
+    
+    // Otherwise, return as is (already encoded)
+    return encodeImageUrl($photoURL);
+}
+
+/**
  * Encode image URL for use in HTML src attribute
  * Replaces spaces with %20 and handles other URL encoding
  * 
