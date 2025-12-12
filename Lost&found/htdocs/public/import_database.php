@@ -29,7 +29,45 @@ $db = new Database();
 $conn = $db->getConnection();
 
 if (!$conn) {
-    die('Error: Could not connect to database. Check your connection settings.');
+    // Try to get more details about the error
+    echo "<h3>Connection Failed - Debugging Info:</h3>";
+    
+    // Check environment variables
+    echo "<p><strong>Environment Variables Check:</strong></p>";
+    echo "<ul>";
+    echo "<li>DB_HOST: " . (getenv('DB_HOST') ?: 'NOT SET') . "</li>";
+    echo "<li>DB_PORT: " . (getenv('DB_PORT') ?: 'NOT SET') . "</li>";
+    echo "<li>DB_NAME: " . (getenv('DB_NAME') ?: 'NOT SET') . "</li>";
+    echo "<li>DB_USER: " . (getenv('DB_USER') ?: 'NOT SET') . "</li>";
+    echo "<li>DB_PASS: " . (getenv('DB_PASS') ? 'SET' : 'NOT SET') . "</li>";
+    echo "</ul>";
+    
+    // Try manual connection to get error details
+    try {
+        $host = getenv('DB_HOST') ?: 'mysql-1bd0087e-dullajasperdave-5242.j.aivencloud.com';
+        $port = getenv('DB_PORT') ?: 17745;
+        $dbname = getenv('DB_NAME') ?: 'ub_lost_found';
+        $user = getenv('DB_USER') ?: 'avnadmin';
+        $pass = getenv('DB_PASS') ?: 'AVNS_YPXN90v3k7puaeMOcCa';
+        
+        $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => 10,
+            PDO::MYSQL_ATTR_SSL_CA => null,
+            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+        ];
+        
+        $testConn = new PDO($dsn, $user, $pass, $options);
+        echo "<p style='color: green;'>✅ Manual connection test successful! The Database class might have an issue.</p>";
+    } catch (PDOException $e) {
+        echo "<p style='color: red;'><strong>Detailed Error:</strong></p>";
+        echo "<pre>" . htmlspecialchars($e->getMessage()) . "</pre>";
+        echo "<p><strong>Error Code:</strong> " . $e->getCode() . "</p>";
+        echo "<p><strong>Connection String:</strong> mysql:host=$host;port=$port;dbname=$dbname</p>";
+    }
+    
+    die('<p style="color: red;"><strong>Error: Could not connect to database.</strong> See details above.</p>');
 }
 
 echo "<h2>Database Import Script</h2>";
