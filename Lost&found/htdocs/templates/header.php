@@ -203,6 +203,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const sidebar = document.getElementById('sidebar');
   const sidebarToggle = document.getElementById('sidebarToggle');
   const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const sidebarHeader = document.querySelector('.sidebar-header');
+  const mainContent = document.querySelector('.main-content');
+
+  // Restore collapsed state
+  const isCollapsed = localStorage.getItem('sidebarCollapsed') === '1';
+  if (isCollapsed) {
+    document.body.classList.add('sidebar-collapsed');
+  }
   
   if (sidebarToggle) {
     sidebarToggle.addEventListener('click', function() {
@@ -228,6 +236,14 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+
+  // Toggle collapse on logo/header click (desktop)
+  if (sidebarHeader) {
+    sidebarHeader.addEventListener('click', function() {
+      const collapsed = document.body.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+    });
+  }
   
   // Handle notification clicks in sidebar dropdown
   const sidebarNotificationItems = document.querySelectorAll('.sidebar-notification-dropdown .notification-item');
