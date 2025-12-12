@@ -100,8 +100,7 @@
             "response": {
               "responseFormat": "json"
             }
-          },
-          "timeout": 30000
+          }
         }
       },
       "id": "get-lost-items",
@@ -129,8 +128,7 @@
             "response": {
               "responseFormat": "json"
             }
-          },
-          "timeout": 30000
+          }
         }
       },
       "id": "get-my-reports",
@@ -158,8 +156,7 @@
             "response": {
               "responseFormat": "json"
             }
-          },
-          "timeout": 30000
+          }
         }
       },
       "id": "get-found-items",
@@ -181,16 +178,18 @@
     },
     {
       "parameters": {
-        "model": "gpt-3.5-turbo",
+        "resource": "chat",
+        "operation": "createMessage",
+        "modelId": "gpt-3.5-turbo",
         "messages": {
           "values": [
             {
               "role": "system",
-              "content": "You are a helpful assistant for a University Lost & Found system. Help students:\n- Report lost items\n- Search for lost or found items\n- Check their report status\n- Answer questions about the system\n\nBe friendly, concise, and helpful. Use the provided context and conversation history to give accurate information. Remember previous messages in the conversation to maintain context. If database results are provided, format them clearly and naturally in your response. Keep responses under 200 words unless listing multiple items.\n\nCRITICAL: Do NOT say \"wait a moment\", \"let me check\", \"I'll check\", or any similar phrases indicating you're still processing. All database queries and processing are ALREADY COMPLETE before you generate your response. Simply provide the complete answer directly using the database results provided. If no results are found, say so clearly. Never indicate that you're still processing - respond with the final answer immediately."
+              "content": "You are a helpful assistant for a University Lost & Found system. Help students:\n- Report lost items\n- Search for lost or found items\n- Check their report status\n- Answer questions about the system\n\nBe friendly, concise, and helpful. Use the provided context and conversation history to give accurate information. Remember previous messages in the conversation to maintain context. If database results are provided, format them clearly and naturally in your response. Keep responses under 200 words unless listing multiple items."
             },
             {
               "role": "user",
-              "content": "={{ (() => {\n  const processNode = $('Process Message').first();\n  const processData = processNode.json || {};\n  const conversationHistory = processData.conversationHistory || [];\n  const currentMessage = processData.originalMessage || '';\n  const studentName = processData.studentName || '';\n  const studentNo = processData.studentNo || '';\n  const intent = processData.intent || 'general';\n  \n  // Get database results from Merge All Paths\n  const mergedData = $json || {};\n  const dbResults = mergedData.data || mergedData || {};\n  \n  // Build conversation history text\n  let historyText = '';\n  if (conversationHistory && conversationHistory.length > 0) {\n    // Get last 8 messages (4 user + 4 assistant pairs) for context\n    const recentHistory = conversationHistory.slice(-8);\n    historyText = '\\n\\nPrevious Conversation History:\\n';\n    recentHistory.forEach((msg, idx) => {\n      if (msg.role && msg.content) {\n        const roleLabel = msg.role === 'user' ? 'User' : 'Assistant';\n        historyText += `${roleLabel}: ${msg.content}\\n`;\n      }\n    });\n  }\n  \n  // Build database results text\n  const dbResultsText = dbResults && typeof dbResults === 'object' && Object.keys(dbResults).length > 0 \n    ? JSON.stringify(dbResults, null, 2) \n    : 'No specific database query was needed for this request.';\n  \n  return `Current Question: ${currentMessage}${historyText}\\n\\nStudent Information:\\n- Name: ${studentName}\\n- Student Number: ${studentNo}\\n- Intent Detected: ${intent}\\n\\nDatabase Results (ALREADY RETRIEVED - processing is complete):\\n${dbResultsText}\\n\\nIMPORTANT: All database queries and processing are COMPLETE. Provide a complete, direct answer immediately. Do NOT say \"wait\", \"let me check\", \"I'll check\", or any similar phrases. Use the database results above to give the final answer right away. If the user is responding to a previous question (like 'yes' or 'no'), refer back to what was asked. Be conversational and helpful.`;\n})() }}"
+              "content": "={{ (() => {\n  const processNode = $('Process Message').first();\n  const processData = processNode.json || {};\n  const conversationHistory = processData.conversationHistory || [];\n  const currentMessage = processData.originalMessage || '';\n  const studentName = processData.studentName || '';\n  const studentNo = processData.studentNo || '';\n  const intent = processData.intent || 'general';\n  \n  // Get database results from Merge All Paths\n  const mergedData = $json || {};\n  const dbResults = mergedData.data || mergedData || {};\n  \n  // Build conversation history text\n  let historyText = '';\n  if (conversationHistory && conversationHistory.length > 0) {\n    // Get last 8 messages (4 user + 4 assistant pairs) for context\n    const recentHistory = conversationHistory.slice(-8);\n    historyText = '\\n\\nPrevious Conversation History:\\n';\n    recentHistory.forEach((msg, idx) => {\n      if (msg.role && msg.content) {\n        const roleLabel = msg.role === 'user' ? 'User' : 'Assistant';\n        historyText += `${roleLabel}: ${msg.content}\\n`;\n      }\n    });\n  }\n  \n  // Build database results text\n  const dbResultsText = dbResults && typeof dbResults === 'object' && Object.keys(dbResults).length > 0 \n    ? JSON.stringify(dbResults, null, 2) \n    : 'No specific database query was needed for this request.';\n  \n  return `Current Question: ${currentMessage}${historyText}\\n\\nStudent Information:\\n- Name: ${studentName}\\n- Student Number: ${studentNo}\\n- Intent Detected: ${intent}\\n\\nDatabase Results (if available):\\n${dbResultsText}\\n\\nPlease provide a helpful, friendly response. Use the conversation history above to understand context. If the user is responding to a previous question (like 'yes' or 'no'), refer back to what was asked. Be conversational and helpful.`;\n})() }}"
             }
           ]
         },
@@ -206,8 +205,8 @@
       "position": [1250, 300],
       "credentials": {
         "openAiApi": {
-          "id": "",
-          "name": ""
+          "id": "openai-credential",
+          "name": "OpenAI API"
         }
       }
     },
@@ -253,14 +252,13 @@
     },
     "Route Intent": {
       "main": [
-        [{"node": "Get Lost Items", "type": "main", "index": 0}],
-        [{"node": "Get Lost Items", "type": "main", "index": 0}],
+        [
+          {"node": "Get Lost Items", "type": "main", "index": 0},
+          {"node": "Get Lost Items", "type": "main", "index": 0}
+        ],
         [{"node": "Get My Reports", "type": "main", "index": 0}],
         [{"node": "Get Found Items", "type": "main", "index": 0}],
         [{"node": "Merge All Paths", "type": "main", "index": 0}]
-      ],
-      "error": [
-        [{"node": "Format Error Response", "type": "main", "index": 0}]
       ]
     },
     "Get Lost Items": {
@@ -299,11 +297,7 @@
   },
   "pinData": {},
   "settings": {
-    "executionOrder": "v1",
-    "executionTimeout": 60,
-    "saveExecutionProgress": false,
-    "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "all"
+    "executionOrder": "v1"
   },
   "staticData": null,
   "tags": [],

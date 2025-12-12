@@ -228,14 +228,8 @@ if ($type === 'photo' && $id) {
     $item = $itemStmt->fetch(PDO::FETCH_ASSOC);
     
     if ($action === 'approve') {
-        // Get StatusID for 'Available' status (StatusID = 1)
-        $statusStmt = $conn->prepare('SELECT StatusID FROM itemstatus WHERE StatusName = :statusName LIMIT 1');
-        $statusStmt->execute(['statusName' => 'Available']);
-        $statusRow = $statusStmt->fetch(PDO::FETCH_ASSOC);
-        $availableStatusID = $statusRow ? $statusRow['StatusID'] : 1; // fallback to 1 if not found
-        
-        $stmt = $conn->prepare('UPDATE item SET StatusConfirmed = 1, StatusID = :statusID, UpdatedAt = CURRENT_TIMESTAMP WHERE ItemID = :id');
-        $stmt->execute(['id' => $id, 'statusID' => $availableStatusID]);
+        $stmt = $conn->prepare('UPDATE item SET StatusConfirmed = 1, UpdatedAt = CURRENT_TIMESTAMP WHERE ItemID = :id');
+        $stmt->execute(['id' => $id]);
         $msg = 'Found item report approved.';
         // Note: Found items are reported by admins, so no user notification needed
         
@@ -266,8 +260,6 @@ if ($type === 'photo' && $id) {
             ], 'found');
         }
     } elseif ($action === 'reject') {
-        // Keep StatusID as Pending (4) or set to Expired (3) - keeping as Pending for now
-        // StatusConfirmed = -1 indicates rejection
         $stmt = $conn->prepare('UPDATE item SET StatusConfirmed = -1, UpdatedAt = CURRENT_TIMESTAMP WHERE ItemID = :id');
         $stmt->execute(['id' => $id]);
         $msg = 'Found item report rejected.';

@@ -7,11 +7,6 @@ $signupMsg = '';
 
 // Handle Login
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-    // #region agent log
-    $logFile = __DIR__ . '/../debug.log';
-    $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'index.php:9', 'message' => 'Login attempt', 'data' => ['student_no' => $_POST['login_studentNo'] ?? '', 'session_id' => session_id()], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'E'];
-    @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-    // #endregion
     $studentNo = $_POST['login_studentNo'] ?? '';
     $password = $_POST['login_password'] ?? '';
     try {
@@ -19,27 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         $result = $student->login($studentNo, $password);
         if ($result['success']) {
             $_SESSION['student'] = $result['user'];
-            // #region agent log
-            $logFile = __DIR__ . '/../debug.log';
-            $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'index.php:16', 'message' => 'Login success session set', 'data' => ['student_no' => $studentNo, 'session_keys' => array_keys($_SESSION)], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'E'];
-            @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-            // #endregion
             header('Location: dashboard.php');
             exit;
         } else {
-            // #region agent log
-            $logFile = __DIR__ . '/../debug.log';
-            $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'index.php:20', 'message' => 'Login failed', 'data' => ['message' => $result['message'] ?? ''], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'E'];
-            @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-            // #endregion
             $loginMsg = $result['message'];
         }
     } catch (Exception $e) {
-        // #region agent log
-        $logFile = __DIR__ . '/../debug.log';
-        $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'index.php:22', 'message' => 'Login exception', 'data' => ['error' => $e->getMessage()], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'E'];
-        @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-        // #endregion
         $loginMsg = 'Database connection unavailable. Please check your database settings.';
     }
 }
