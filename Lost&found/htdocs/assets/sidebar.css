@@ -147,11 +147,66 @@
   margin-left: 0.5rem;
   flex-shrink: 0;
   transition: transform 0.2s;
+  background: transparent !important;
+  cursor: pointer;
 }
 
 .notification-bell-link:hover {
   transform: scale(1.1);
   color: #FFD700 !important;
+}
+
+.notification-bell-link:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+.sidebar-notification-dropdown {
+  margin-top: 0.5rem;
+  margin-left: -320px;
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  border: 1px solid rgba(0,0,0,0.1);
+  position: absolute;
+  z-index: 1050;
+}
+
+@media (max-width: 768px) {
+  .sidebar-notification-dropdown {
+    margin-left: 0;
+    margin-top: 0.5rem;
+    position: fixed;
+    left: 1rem;
+    right: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+.sidebar-notification-dropdown .dropdown-header {
+  background: linear-gradient(135deg, #800000 0%, #a83232 100%);
+  color: #FFD700;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.sidebar-notification-dropdown .notification-item {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  text-overflow: clip;
+}
+
+.sidebar-notification-dropdown .notification-item:hover {
+  background-color: rgba(128,0,0,0.05);
+}
+
+.sidebar-notification-dropdown .notification-item:last-of-type {
+  border-bottom: none;
 }
 
 .sidebar-user-actions {
