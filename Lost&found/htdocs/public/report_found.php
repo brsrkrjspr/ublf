@@ -23,22 +23,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Get ItemClassID from ItemClass table or insert if not exists
+    // Get ItemClassID from itemclass table or insert if not exists
     $db = new Database();
     $conn = $db->getConnection();
-    $stmt = $conn->prepare('SELECT ItemClassID FROM ItemClass WHERE ClassName = :className LIMIT 1');
+    $stmt = $conn->prepare('SELECT ItemClassID FROM `itemclass` WHERE ClassName = :className LIMIT 1');
     $stmt->execute(['className' => $itemClass]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($row) {
         $itemClassID = $row['ItemClassID'];
     } else {
-        $stmt = $conn->prepare('INSERT INTO ItemClass (ClassName) VALUES (:className)');
+        $stmt = $conn->prepare('INSERT INTO `itemclass` (ClassName) VALUES (:className)');
         $stmt->execute(['className' => $itemClass]);
         $itemClassID = $conn->lastInsertId();
     }
 
-    // Insert into Item
-    $stmt = $conn->prepare('INSERT INTO Item (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusConfirmed) VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 0)');
+    // Insert into item
+    $stmt = $conn->prepare('INSERT INTO `item` (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusConfirmed) VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 0)');
     $result = $stmt->execute([
         'adminID' => $adminID,
         'itemName' => $itemName,

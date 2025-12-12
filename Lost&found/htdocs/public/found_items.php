@@ -33,7 +33,7 @@ if ($conn === null) {
       $foundWhere[] = 'c.ClassName LIKE :class';
       $foundParams['class'] = '%' . $_GET['found_class'] . '%';
     }
-    $foundSql = 'SELECT i.ItemID, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, a.AdminName, a.Email FROM Item i JOIN ItemClass c ON i.ItemClassID = c.ItemClassID JOIN Admin a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
+    $foundSql = 'SELECT i.ItemID, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
     if ($foundWhere) {
       $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
     }
@@ -109,7 +109,7 @@ if ($conn === null) {
         <div class="col-md-4 col-lg-3">
           <div class="card h-100 shadow-sm">
             <?php if ($item['PhotoURL']): ?>
-              <img src="../<?php echo encodeImageUrl($item['PhotoURL']); ?>" class="card-img-top" alt="Found Item Image" style="object-fit:cover;max-height:180px;" onerror="<?php echo getImageErrorHandler(); ?>">
+              <img src="<?php echo getImagePath($item['PhotoURL']); ?>" class="card-img-top" alt="Found Item Image" style="object-fit:cover;max-height:180px;" onerror="<?php echo getImageErrorHandler(); ?>">
             <?php else: ?>
               <img src="<?php echo getPlaceholderImage(); ?>" class="card-img-top" alt="No Image">
             <?php endif; ?>
@@ -134,7 +134,7 @@ if ($conn === null) {
               </div>
               <div class="modal-body">
                 <?php if ($item['PhotoURL']): ?>
-                  <img src="../<?php echo encodeImageUrl($item['PhotoURL']); ?>" class="img-fluid mb-3" alt="Found Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
+                  <img src="<?php echo getImagePath($item['PhotoURL']); ?>" class="img-fluid mb-3" alt="Found Item Image" onerror="<?php echo getImageErrorHandler(); ?>">
                 <?php endif; ?>
                 <ul class="list-group list-group-flush mb-2">
                   <li class="list-group-item"><strong>Class:</strong> <?php echo htmlspecialchars($item['ClassName']); ?></li>

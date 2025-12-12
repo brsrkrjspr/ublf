@@ -81,12 +81,12 @@ if ($section === 'itemmgmt') {
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_category']) && $conn) {
     $newCat = trim($_POST['category_name'] ?? '');
     if ($newCat !== '') {
-      $stmt = $conn->prepare('SELECT COUNT(*) FROM ItemClass WHERE ClassName = :name');
+      $stmt = $conn->prepare('SELECT COUNT(*) FROM `itemclass` WHERE ClassName = :name');
       $stmt->execute(['name' => $newCat]);
       if ($stmt->fetchColumn() > 0) {
         $catMsg = '<div class="alert alert-warning">Category already exists.</div>';
       } else {
-        $stmt = $conn->prepare('INSERT INTO ItemClass (ClassName) VALUES (:name)');
+        $stmt = $conn->prepare('INSERT INTO `itemclass` (ClassName) VALUES (:name)');
         if ($stmt->execute(['name' => $newCat])) {
           $catMsg = '<div class="alert alert-success">Category added.</div>';
         } else {
@@ -100,12 +100,12 @@ if ($section === 'itemmgmt') {
     $catId = intval($_POST['edit_id'] ?? 0);
     $catName = trim($_POST['edit_name'] ?? '');
     if ($catId && $catName !== '') {
-      $stmt = $conn->prepare('SELECT COUNT(*) FROM ItemClass WHERE ClassName = :name AND ItemClassID != :id');
+      $stmt = $conn->prepare('SELECT COUNT(*) FROM `itemclass` WHERE ClassName = :name AND ItemClassID != :id');
       $stmt->execute(['name' => $catName, 'id' => $catId]);
       if ($stmt->fetchColumn() > 0) {
         $catMsg = '<div class="alert alert-warning">Category name already exists.</div>';
       } else {
-        $stmt = $conn->prepare('UPDATE ItemClass SET ClassName = :name WHERE ItemClassID = :id');
+        $stmt = $conn->prepare('UPDATE `itemclass` SET ClassName = :name WHERE ItemClassID = :id');
         if ($stmt->execute(['name' => $catName, 'id' => $catId])) {
           $catMsg = '<div class="alert alert-success">Category updated.</div>';
         } else {
@@ -125,7 +125,7 @@ if ($section === 'itemmgmt') {
       if ($inUse > 0) {
         $catMsg = '<div class="alert alert-warning">Cannot delete: category in use.</div>';
       } else {
-        $stmt = $conn->prepare('DELETE FROM ItemClass WHERE ItemClassID = :id');
+        $stmt = $conn->prepare('DELETE FROM `itemclass` WHERE ItemClassID = :id');
         if ($stmt->execute(['id' => $catId])) {
           $catMsg = '<div class="alert alert-success">Category deleted.</div>';
         } else {
@@ -138,7 +138,7 @@ if ($section === 'itemmgmt') {
   $cats = [];
   try {
     if ($conn) {
-      $cats = $conn->query('SELECT * FROM ItemClass ORDER BY ClassName')->fetchAll(PDO::FETCH_ASSOC);
+      $cats = $conn->query('SELECT * FROM `itemclass` ORDER BY ClassName')->fetchAll(PDO::FETCH_ASSOC);
     }
   } catch (Exception $e) {
     // Use empty array
@@ -151,12 +151,12 @@ if ($section === 'itemmgmt') {
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_status']) && $conn) {
     $newStatus = trim($_POST['status_name'] ?? '');
     if ($newStatus !== '') {
-      $stmt = $conn->prepare('SELECT COUNT(*) FROM Status WHERE StatusName = :name');
+      $stmt = $conn->prepare('SELECT COUNT(*) FROM `status` WHERE StatusName = :name');
       $stmt->execute(['name' => $newStatus]);
       if ($stmt->fetchColumn() > 0) {
         $statusMsg = '<div class="alert alert-warning">Status already exists.</div>';
       } else {
-        $stmt = $conn->prepare('INSERT INTO Status (StatusName) VALUES (:name)');
+        $stmt = $conn->prepare('INSERT INTO `status` (StatusName) VALUES (:name)');
         if ($stmt->execute(['name' => $newStatus])) {
           $statusMsg = '<div class="alert alert-success">Status added.</div>';
         } else {
@@ -170,12 +170,12 @@ if ($section === 'itemmgmt') {
     $statusId = intval($_POST['edit_status_id'] ?? 0);
     $statusName = trim($_POST['edit_status_name'] ?? '');
     if ($statusId && $statusName !== '') {
-      $stmt = $conn->prepare('SELECT COUNT(*) FROM Status WHERE StatusName = :name AND StatusID != :id');
+      $stmt = $conn->prepare('SELECT COUNT(*) FROM `status` WHERE StatusName = :name AND StatusID != :id');
       $stmt->execute(['name' => $statusName, 'id' => $statusId]);
       if ($stmt->fetchColumn() > 0) {
         $statusMsg = '<div class="alert alert-warning">Status name already exists.</div>';
       } else {
-        $stmt = $conn->prepare('UPDATE Status SET StatusName = :name WHERE StatusID = :id');
+        $stmt = $conn->prepare('UPDATE `status` SET StatusName = :name WHERE StatusID = :id');
         if ($stmt->execute(['name' => $statusName, 'id' => $statusId])) {
           $statusMsg = '<div class="alert alert-success">Status updated.</div>';
         } else {
@@ -195,7 +195,7 @@ if ($section === 'itemmgmt') {
       if ($inUse > 0) {
         $statusMsg = '<div class="alert alert-warning">Cannot delete: status in use.</div>';
       } else {
-        $stmt = $conn->prepare('DELETE FROM Status WHERE StatusID = :id');
+        $stmt = $conn->prepare('DELETE FROM `status` WHERE StatusID = :id');
         if ($stmt->execute(['id' => $statusId])) {
           $statusMsg = '<div class="alert alert-success">Status deleted.</div>';
         } else {
@@ -208,7 +208,7 @@ if ($section === 'itemmgmt') {
   $statuses = [];
   try {
     if ($conn) {
-      $statuses = $conn->query('SELECT * FROM Status ORDER BY StatusName')->fetchAll(PDO::FETCH_ASSOC);
+      $statuses = $conn->query('SELECT * FROM `status` ORDER BY StatusName')->fetchAll(PDO::FETCH_ASSOC);
     }
   } catch (Exception $e) {
     // Use empty array
@@ -359,7 +359,7 @@ if ($section === 'export') {
       while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) fputcsv($out, $row);
     } elseif ($type === 'found') {
       fputcsv($out, ['ItemID','ItemName','ClassName','Description','DateFound','LocationFound','AdminID']);
-      $stmt = $conn->query('SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.AdminID FROM Item i JOIN ItemClass c ON i.ItemClassID = c.ItemClassID');
+      $stmt = $conn->query('SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.AdminID FROM `item` i JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID');
       while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) fputcsv($out, $row);
     } elseif ($type === 'students') {
       fputcsv($out, ['StudentNo','StudentName','Email','PhoneNo','Active']);

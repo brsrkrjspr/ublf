@@ -25,22 +25,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Get ItemClassID from ItemClass table or insert if not exists
+    // Get ItemClassID from itemclass table or insert if not exists
     $db = new Database();
     $conn = $db->getConnection();
-    $stmt = $conn->prepare('SELECT ItemClassID FROM ItemClass WHERE ClassName = :className LIMIT 1');
+    $stmt = $conn->prepare('SELECT ItemClassID FROM `itemclass` WHERE ClassName = :className LIMIT 1');
     $stmt->execute(['className' => $itemClass]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($row) {
         $itemClassID = $row['ItemClassID'];
     } else {
-        $stmt = $conn->prepare('INSERT INTO ItemClass (ClassName) VALUES (:className)');
+        $stmt = $conn->prepare('INSERT INTO `itemclass` (ClassName) VALUES (:className)');
         $stmt->execute(['className' => $itemClass]);
         $itemClassID = $conn->lastInsertId();
     }
 
     // Get default ReportStatusID for 'Open'
-    $stmt = $conn->prepare('SELECT ReportStatusID FROM ReportStatus WHERE StatusName = :status LIMIT 1');
+    $stmt = $conn->prepare('SELECT ReportStatusID FROM `reportstatus` WHERE StatusName = :status LIMIT 1');
     $stmt->execute(['status' => 'Open']);
     $statusRow = $stmt->fetch(PDO::FETCH_ASSOC);
     $reportStatusID = $statusRow ? $statusRow['ReportStatusID'] : 1; // fallback to 1 if not found
