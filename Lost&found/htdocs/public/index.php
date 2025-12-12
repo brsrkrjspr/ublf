@@ -63,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
     $ubCssFile = file_exists(__DIR__ . '/../assets/UB.css') ? 'UB.css' : 'ub.css';
     ?>
     <link href="css.php?file=<?php echo urlencode($ubCssFile); ?>" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
 <div class="index-bg">
@@ -115,7 +116,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             <label for="login_password" class="form-label">Password</label>
             <div class="input-group">
               <input type="password" class="form-control" id="login_password" name="login_password" required>
-              <button type="button" class="btn btn-outline-secondary password-toggle" tabindex="-1" onclick="togglePassword('login_password', this)" aria-label="Show password"><i class="bi bi-eye"></i></button>
+              <button type="button" class="btn btn-outline-secondary password-toggle" tabindex="-1" onclick="togglePassword('login_password', this)" aria-label="Show password" style="border-left: none;">
+                <i class="bi bi-eye" id="login_password_icon"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -159,7 +162,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             <label for="signup_password" class="form-label">Password</label>
             <div class="input-group">
               <input type="password" class="form-control" id="signup_password" name="signup_password" required>
-              <button type="button" class="btn btn-outline-secondary password-toggle" tabindex="-1" onclick="togglePassword('signup_password', this)" aria-label="Show password"><i class="bi bi-eye"></i></button>
+              <button type="button" class="btn btn-outline-secondary password-toggle" tabindex="-1" onclick="togglePassword('signup_password', this)" aria-label="Show password" style="border-left: none;">
+                <i class="bi bi-eye" id="signup_password_icon"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -171,7 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.js"></script>
 <script>
 function togglePassword(inputId, btn) {
   const input = document.getElementById(inputId);
@@ -188,6 +192,30 @@ function togglePassword(inputId, btn) {
     btn.setAttribute('aria-label', 'Show password');
   }
 }
+
+// Add some styling for better visibility
+document.addEventListener('DOMContentLoaded', function() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .password-toggle {
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #6c757d;
+    }
+    .password-toggle:hover {
+      background-color: #e9ecef;
+      color: #495057;
+    }
+    .password-toggle i {
+      font-size: 1.1rem;
+    }
+    .input-group .form-control:focus + .password-toggle {
+      border-color: #86b7fe;
+      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+  `;
+  document.head.appendChild(style);
+});
 </script>
 <?php if ($loginMsg || $signupSuccess): ?>
 <script>
