@@ -17,14 +17,8 @@ class Item {
         // Get or create ItemClassID
         $itemClassID = $this->getOrCreateItemClass($itemClass);
         
-        // Get StatusID for 'Pending' status (StatusID = 4)
-        $stmt = $this->conn->prepare('SELECT StatusID FROM itemstatus WHERE StatusName = :statusName LIMIT 1');
-        $stmt->execute(['statusName' => 'Pending']);
-        $statusRow = $stmt->fetch(PDO::FETCH_ASSOC);
-        $statusID = $statusRow ? $statusRow['StatusID'] : 4; // fallback to 4 if not found
-        
         $query = "INSERT INTO {$this->table} (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusID, StatusConfirmed) 
-                  VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, :statusID, 0)";
+                  VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 1, 0)";
         
         $stmt = $this->conn->prepare($query);
         $result = $stmt->execute([
@@ -34,8 +28,7 @@ class Item {
             'description' => $description,
             'dateFound' => $dateFound,
             'locationFound' => $locationFound,
-            'photoURL' => $photoURL,
-            'statusID' => $statusID
+            'photoURL' => $photoURL
         ]);
 
         return $result ? 
@@ -98,7 +91,7 @@ class Item {
     }
 
     public function reject($itemID, $adminID) {
-        $query = "UPDATE {$this->table} SET StatusConfirmed = -1 WHERE ItemID = :itemID";
+        $query = "UPDATE {$this->table} SET StatusConfirmed = 2 WHERE ItemID = :itemID";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute(['itemID' => $itemID]);
     }

@@ -13,11 +13,6 @@ class Config {
      * Load configuration from .env file and environment variables
      */
     private static function load() {
-        // #region agent log
-        $logFile = __DIR__ . '/../debug.log';
-        $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'Config.php:15', 'message' => 'Config load started', 'data' => ['already_loaded' => self::$loaded], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B'];
-        @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-        // #endregion
         if (self::$loaded) {
             return;
         }
@@ -29,46 +24,25 @@ class Config {
             __DIR__ . '/.env'
         ];
         
-        $envFileFound = false;
         foreach ($envFiles as $envFile) {
             if (file_exists($envFile)) {
-                // #region agent log
-                $logFile = __DIR__ . '/../debug.log';
-                $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'Config.php:29', 'message' => 'Config .env file found', 'data' => ['env_file' => $envFile], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B'];
-                @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-                // #endregion
                 self::loadEnvFile($envFile);
-                $envFileFound = true;
                 break;
             }
         }
-        // #region agent log
-        if (!$envFileFound) {
-            $logFile = __DIR__ . '/../debug.log';
-            $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'Config.php:35', 'message' => 'Config no .env file found', 'data' => ['using_defaults' => true], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B'];
-            @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-        }
-        // #endregion
         
         // Set default configuration values
-        $n8nWebhookUrl = getenv('N8N_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/chatbot';
-        $apiKey = getenv('API_KEY') ?: 'ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h';
         self::$config = [
-            'N8N_WEBHOOK_URL' => $n8nWebhookUrl,
+            'N8N_WEBHOOK_URL' => getenv('N8N_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/chatbot',
             'N8N_APPROVAL_WEBHOOK_URL' => getenv('N8N_APPROVAL_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/approval-action',
             'N8N_CREATE_LOST_REPORT_WEBHOOK_URL' => getenv('N8N_CREATE_LOST_REPORT_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/create-lost-report',
             'N8N_MATCH_DETECTION_FOUND_WEBHOOK_URL' => getenv('N8N_MATCH_DETECTION_FOUND_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/found-item-approved',
             'N8N_MATCH_DETECTION_LOST_WEBHOOK_URL' => getenv('N8N_MATCH_DETECTION_LOST_WEBHOOK_URL') ?: 'https://besmar.app.n8n.cloud/webhook/lost-item-approved',
             'N8N_API_KEY' => getenv('N8N_API_KEY') ?: '',
-            'API_KEY' => $apiKey,
+            'API_KEY' => getenv('API_KEY') ?: 'ublf-x10mx-2024-secure-api-key-7a9b3c2d1e4f6g8h',
             'ENVIRONMENT' => getenv('ENVIRONMENT') ?: 'development',
             'DEBUG' => getenv('DEBUG') ?: 'false',
         ];
-        // #region agent log
-        $logFile = __DIR__ . '/../debug.log';
-        $logData = ['id' => 'log_' . time() . '_' . uniqid(), 'timestamp' => round(microtime(true) * 1000), 'location' => 'Config.php:47', 'message' => 'Config values loaded', 'data' => ['n8n_webhook_url' => $n8nWebhookUrl, 'api_key_set' => !empty($apiKey), 'config_keys' => array_keys(self::$config)], 'sessionId' => 'debug-session', 'runId' => 'run1', 'hypothesisId' => 'B'];
-        @file_put_contents($logFile, json_encode($logData) . "\n", FILE_APPEND | LOCK_EX);
-        // #endregion
         
         self::$loaded = true;
     }
