@@ -25,7 +25,7 @@ if (!empty($_GET['lost_class'])) {
   $lostWhere[] = 'c.ClassName LIKE :class';
   $lostParams['class'] = '%' . $_GET['lost_class'] . '%';
 }
-$lostSql = 'SELECT r.ReportID, c.ClassName, r.Description, r.DateOfLoss, r.CreatedAt, s.StudentName, s.Email, s.PhoneNo, r.PhotoURL, s.ProfilePhoto, s.PhotoConfirmed, s.StudentNo FROM reportitem r JOIN itemclass c ON r.ItemClassID = c.ItemClassID JOIN student s ON r.StudentNo = s.StudentNo WHERE r.StatusConfirmed = 1';
+$lostSql = 'SELECT r.ReportID, c.ClassName, r.Description, r.DateOfLoss, r.CreatedAt, s.StudentName, s.Email, s.PhoneNo, r.PhotoURL, s.ProfilePhoto, s.PhotoConfirmed, s.StudentNo FROM `reportitem` r LEFT JOIN `itemclass` c ON r.ItemClassID = c.ItemClassID LEFT JOIN `student` s ON r.StudentNo = s.StudentNo WHERE r.StatusConfirmed = 1';
 if ($lostWhere) {
   $lostSql .= ' AND ' . implode(' AND ', $lostWhere);
 }

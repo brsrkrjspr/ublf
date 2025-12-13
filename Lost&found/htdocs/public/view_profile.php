@@ -27,7 +27,7 @@ if (!$profileStudent) {
 }
 
 // Fetch their approved lost item reports
-$stmt = $conn->prepare('SELECT r.ReportID, c.ClassName, r.Description, r.DateOfLoss, r.CreatedAt, r.PhotoURL FROM reportitem r JOIN itemclass c ON r.ItemClassID = c.ItemClassID WHERE r.StudentNo = :studentNo AND r.StatusConfirmed = 1 ORDER BY r.CreatedAt DESC LIMIT 6');
+$stmt = $conn->prepare('SELECT r.ReportID, c.ClassName, r.Description, r.DateOfLoss, r.CreatedAt, r.PhotoURL FROM `reportitem` r LEFT JOIN `itemclass` c ON r.ItemClassID = c.ItemClassID WHERE r.StudentNo = :studentNo AND r.StatusConfirmed = 1 ORDER BY r.CreatedAt DESC LIMIT 6');
 $stmt->execute(['studentNo' => $studentNo]);
 $theirReports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

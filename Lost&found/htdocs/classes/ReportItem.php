@@ -75,7 +75,7 @@ class ReportItem {
 
     private function getOrCreateItemClass($className) {
         // Check if class exists
-        $stmt = $this->conn->prepare('SELECT ItemClassID FROM itemclass WHERE ClassName = :className LIMIT 1');
+        $stmt = $this->conn->prepare('SELECT ItemClassID FROM `itemclass` WHERE ClassName = :className LIMIT 1');
         $stmt->execute(['className' => $className]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -83,7 +83,7 @@ class ReportItem {
             return $row['ItemClassID'];
         } else {
             // Create new class
-            $stmt = $this->conn->prepare('INSERT INTO itemclass (ClassName) VALUES (:className)');
+            $stmt = $this->conn->prepare('INSERT INTO `itemclass` (ClassName) VALUES (:className)');
             $stmt->execute(['className' => $className]);
             return $this->conn->lastInsertId();
         }
@@ -93,8 +93,8 @@ class ReportItem {
         $query = "SELECT ri.ReportID, ri.StudentNo, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.StatusConfirmed,
                          s.StudentName, s.Email, ic.ClassName
                   FROM {$this->table} ri
-                  JOIN student s ON ri.StudentNo = s.StudentNo
-                  JOIN itemclass ic ON ri.ItemClassID = ic.ItemClassID
+                  LEFT JOIN `student` s ON ri.StudentNo = s.StudentNo
+                  LEFT JOIN `itemclass` ic ON ri.ItemClassID = ic.ItemClassID
                   WHERE ri.StatusConfirmed = 1
                   ORDER BY ri.ReportID DESC";
         
@@ -115,7 +115,7 @@ class ReportItem {
         $query = "SELECT ri.ReportID, ri.StudentNo, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.StatusConfirmed,
                          ic.ClassName
                   FROM {$this->table} ri
-                  JOIN itemclass ic ON ri.ItemClassID = ic.ItemClassID
+                  LEFT JOIN `itemclass` ic ON ri.ItemClassID = ic.ItemClassID
                   WHERE ri.StudentNo = :studentNo
                   ORDER BY ri.ReportID DESC";
         
@@ -127,8 +127,8 @@ class ReportItem {
     public function getById($reportItemID) {
         $query = "SELECT ri.*, s.StudentName, ic.ClassName
                   FROM {$this->table} ri
-                  JOIN student s ON ri.StudentNo = s.StudentNo
-                  JOIN itemclass ic ON ri.ItemClassID = ic.ItemClassID
+                  LEFT JOIN `student` s ON ri.StudentNo = s.StudentNo
+                  LEFT JOIN `itemclass` ic ON ri.ItemClassID = ic.ItemClassID
                   WHERE ri.ReportID = :reportItemID";
         
         $stmt = $this->conn->prepare($query);
@@ -184,8 +184,8 @@ class ReportItem {
         $query = "SELECT ri.ReportID, ri.StudentNo, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.StatusConfirmed,
                          s.StudentName, s.Email, ic.ClassName
                   FROM {$this->table} ri
-                  JOIN student s ON ri.StudentNo = s.StudentNo
-                  JOIN itemclass ic ON ri.ItemClassID = ic.ItemClassID
+                  LEFT JOIN `student` s ON ri.StudentNo = s.StudentNo
+                  LEFT JOIN `itemclass` ic ON ri.ItemClassID = ic.ItemClassID
                   WHERE ri.StatusConfirmed = 1 AND 
                         (ri.ItemName LIKE :searchTerm OR ri.Description LIKE :searchTerm OR ri.LostLocation LIKE :searchTerm)";
         
@@ -210,7 +210,7 @@ class ReportItem {
         }
         // Get ALL classes from itemclass table, not just ones with approved items
         $query = "SELECT DISTINCT ic.ClassName 
-                  FROM itemclass ic 
+                  FROM `itemclass` ic 
                   ORDER BY ic.ClassName";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
