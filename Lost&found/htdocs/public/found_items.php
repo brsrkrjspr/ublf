@@ -59,19 +59,27 @@ if ($conn === null) {
       $foundWhere[] = 'c.ClassName LIKE :class';
       $foundParams['class'] = '%' . $_GET['found_class'] . '%';
     }
+<<<<<<< HEAD
     // Query for approved found items - matches pattern from all_lost.php
     $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
+=======
+    // Query for approved found items - using CAST to ensure proper comparison with tinyint
+    $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE CAST(i.StatusConfirmed AS SIGNED) = 1';
+>>>>>>> 0f4eaf9fb3a9ba0e5613ffe7ece8fd194d0c8316
     if ($foundWhere) {
       $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
     }
     $foundSql .= ' ORDER BY i.CreatedAt DESC';
     
-    // #region agent log
-    $logPath = __DIR__ . '/../.cursor/debug.log';
-    $logDir = dirname($logPath);
-    if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
-    @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_found_query','timestamp'=>time()*1000,'location'=>'found_items.php:36','message'=>'Found items query prepared','data'=>['sql'=>$foundSql,'params'=>$foundParams],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
-    // #endregion
+        // #region agent log
+        $logPath = __DIR__ . '/../.cursor/debug.log';
+        $logDir = dirname($logPath);
+        if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+        // Check current database name
+        $dbNameStmt = $conn->query('SELECT DATABASE() as dbname');
+        $dbName = $dbNameStmt->fetch(PDO::FETCH_ASSOC);
+        @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_found_query','timestamp'=>time()*1000,'location'=>'found_items.php:36','message'=>'Found items query prepared','data'=>['sql'=>$foundSql,'params'=>$foundParams,'database'=>$dbName['dbname']??'unknown'],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        // #endregion
     
     try {
         $stmt = $conn->prepare($foundSql);
@@ -84,13 +92,26 @@ if ($conn === null) {
         if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
         @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_found_results','timestamp'=>time()*1000,'location'=>'found_items.php:45','message'=>'Found items query executed','data'=>['resultCount'=>count($foundItems),'firstItem'=>$foundItems[0]??null],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
         
-        // Check database state
-        $checkStmt = $conn->prepare('SELECT ItemID, StatusConfirmed, ItemClassID, AdminID, ItemName FROM `item` ORDER BY ItemID DESC LIMIT 5');
+        // Check database state - get ALL items regardless of status
+        $checkStmt = $conn->prepare('SELECT ItemID, StatusConfirmed, ItemClassID, AdminID, ItemName, CreatedAt FROM `item` ORDER BY ItemID DESC LIMIT 10');
         $checkStmt->execute();
         $allItems = $checkStmt->fetchAll(PDO::FETCH_ASSOC);
-        @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_db_state','timestamp'=>time()*1000,'location'=>'found_items.php:50','message'=>'Database state check','data'=>['allItems'=>$allItems],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
         
-        $statsStmt = $conn->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN StatusConfirmed = 1 OR StatusConfirmed = "1" THEN 1 ELSE 0 END) as approved, SUM(CASE WHEN StatusConfirmed = 0 OR StatusConfirmed = "0" THEN 1 ELSE 0 END) as pending FROM `item`');
+        // Test simple query without JOINs to see if StatusConfirmed = 1 items exist
+        $simpleStmt = $conn->prepare('SELECT ItemID, StatusConfirmed FROM `item` WHERE StatusConfirmed = 1 LIMIT 5');
+        $simpleStmt->execute();
+        $simpleResults = $simpleStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_db_state','timestamp'=>time()*1000,'location'=>'found_items.php:50','message'=>'Database state check','data'=>['allItems'=>$allItems,'simpleQueryResults'=>$simpleResults],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        
+        // Get comprehensive statistics including NULL values
+        $statsStmt = $conn->prepare('SELECT 
+            COUNT(*) as total, 
+            SUM(CASE WHEN StatusConfirmed = 1 OR StatusConfirmed = "1" THEN 1 ELSE 0 END) as approved, 
+            SUM(CASE WHEN StatusConfirmed = 0 OR StatusConfirmed = "0" THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN StatusConfirmed IS NULL THEN 1 ELSE 0 END) as null_status,
+            SUM(CASE WHEN StatusConfirmed = -1 OR StatusConfirmed = "-1" THEN 1 ELSE 0 END) as rejected
+            FROM `item`');
         $statsStmt->execute();
         $statsResult = $statsStmt->fetch(PDO::FETCH_ASSOC);
         $stats = $statsResult ?: ['total' => 0, 'approved' => 0, 'pending' => 0, 'null_status' => 0, 'rejected' => 0];
@@ -216,10 +237,12 @@ if ($conn === null) {
             <strong style="color:red;">Query Error: <?php echo htmlspecialchars($stats['error']); ?></strong><br>
           <?php endif; ?>
           <?php if (isset($allItems) && !empty($allItems)): ?>
-            <strong>Recent 5 items in DB:</strong><br>
+            <strong>Recent 10 items in DB:</strong><br>
             <?php foreach ($allItems as $item): ?>
-              - ID: <?php echo $item['ItemID']; ?>, Name: <?php echo htmlspecialchars($item['ItemName']); ?>, StatusConfirmed: <?php echo var_export($item['StatusConfirmed'], true); ?> (type: <?php echo gettype($item['StatusConfirmed']); ?>)<br>
+              - ID: <?php echo $item['ItemID']; ?>, Name: <?php echo htmlspecialchars($item['ItemName']); ?>, StatusConfirmed: <?php echo var_export($item['StatusConfirmed'], true); ?> (type: <?php echo gettype($item['StatusConfirmed']); ?>), ItemClassID: <?php echo $item['ItemClassID']; ?>, AdminID: <?php echo $item['AdminID']; ?><br>
             <?php endforeach; ?>
+          <?php else: ?>
+            <strong style="color:red;">WARNING: No items found in database at all! Check database connection.</strong><br>
           <?php endif; ?>
           <?php if (isset($typeCheck) && !empty($typeCheck)): ?>
             <strong>StatusConfirmed values:</strong><br>
