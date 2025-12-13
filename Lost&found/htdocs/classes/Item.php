@@ -18,7 +18,7 @@ class Item {
         $logPath = __DIR__ . '/../../.cursor/debug.log';
         $logDir = dirname($logPath);
         if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
-        @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_item_create_entry','timestamp'=>time()*1000,'location'=>'Item.php:16','message'=>'Item::create called','data'=>['adminID'=>$adminID,'itemName'=>$itemName,'itemClass'=>$itemClass,'StatusConfirmed'=>1],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_item_create_entry','timestamp'=>time()*1000,'location'=>'Item.php:16','message'=>'Item::create called','data'=>['adminID'=>$adminID,'itemName'=>$itemName,'itemClass'=>$itemClass,'StatusConfirmed'=>0],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
         // #endregion
         
         // Get or create ItemClassID
@@ -32,7 +32,7 @@ class Item {
         // #endregion
         
         $query = "INSERT INTO {$this->table} (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusID, StatusConfirmed) 
-                  VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 1, 1)";
+                  VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 1, 0)";
         
         $stmt = $this->conn->prepare($query);
         $result = $stmt->execute([
@@ -62,7 +62,7 @@ class Item {
         // #endregion
 
         return $result ? 
-            ['success' => true, 'message' => 'Found item report submitted successfully. It is now visible to others.', 'id' => $itemID] : 
+            ['success' => true, 'message' => 'Found item report submitted successfully. It will be visible to others after admin approval.', 'id' => $itemID] : 
             ['success' => false, 'message' => 'Failed to report found item.'];
     }
 
