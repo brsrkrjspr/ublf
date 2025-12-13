@@ -37,8 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $itemClassID = $conn->lastInsertId();
     }
 
-    // Insert into item (StatusConfirmed = 1 to auto-approve and display immediately)
-    $stmt = $conn->prepare('INSERT INTO `item` (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusConfirmed) VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 1)');
+    // Insert into item
+    $stmt = $conn->prepare('INSERT INTO `item` (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusConfirmed) VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 0)');
     $result = $stmt->execute([
         'adminID' => $adminID,
         'itemName' => $itemName,
