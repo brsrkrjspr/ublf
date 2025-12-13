@@ -60,7 +60,7 @@ if ($conn === null) {
       $foundParams['class'] = '%' . $_GET['found_class'] . '%';
     }
     // Query for approved found items - matches pattern from all_lost.php
-    $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
+    $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, \'Unknown\') as AdminName, COALESCE(a.Email, \'N/A\') as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
     if ($foundWhere) {
       $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
     }
@@ -102,10 +102,10 @@ if ($conn === null) {
         // Get comprehensive statistics including NULL values
         $statsStmt = $conn->prepare('SELECT 
             COUNT(*) as total, 
-            SUM(CASE WHEN StatusConfirmed = 1 OR StatusConfirmed = "1" THEN 1 ELSE 0 END) as approved, 
-            SUM(CASE WHEN StatusConfirmed = 0 OR StatusConfirmed = "0" THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN StatusConfirmed = 1 THEN 1 ELSE 0 END) as approved, 
+            SUM(CASE WHEN StatusConfirmed = 0 THEN 1 ELSE 0 END) as pending,
             SUM(CASE WHEN StatusConfirmed IS NULL THEN 1 ELSE 0 END) as null_status,
-            SUM(CASE WHEN StatusConfirmed = -1 OR StatusConfirmed = "-1" THEN 1 ELSE 0 END) as rejected
+            SUM(CASE WHEN StatusConfirmed = -1 THEN 1 ELSE 0 END) as rejected
             FROM `item`');
         $statsStmt->execute();
         $statsResult = $statsStmt->fetch(PDO::FETCH_ASSOC);
