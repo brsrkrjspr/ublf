@@ -235,7 +235,10 @@ function handleLostItemReport($reportItem, $fileUpload) {
 
 function handleFoundItemReport($item, $fileUpload) {
         // #region agent log
-        file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_handle_entry','timestamp'=>time()*1000,'location'=>'dashboard.php:236','message'=>'handleFoundItemReport called','data'=>['itemName'=>$_POST['foundItemName']??'','itemClass'=>$_POST['foundItemClass']??''],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        $logPath = __DIR__ . '/../.cursor/debug.log';
+        $logDir = dirname($logPath);
+        if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+        @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_handle_entry','timestamp'=>time()*1000,'location'=>'dashboard.php:236','message'=>'handleFoundItemReport called','data'=>['itemName'=>$_POST['foundItemName']??'','itemClass'=>$_POST['foundItemClass']??''],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
         // #endregion
         
         $adminID = 1; // For demo, use AdminID=1. In real app, use session for admin login.
@@ -252,7 +255,10 @@ function handleFoundItemReport($item, $fileUpload) {
             $photoURL = $uploadResult['path'];
         } else {
             // #region agent log
-            file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_upload_failed','timestamp'=>time()*1000,'location'=>'dashboard.php:250','message'=>'Photo upload failed','data'=>['error'=>$uploadResult['message']??''],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+            $logPath = __DIR__ . '/../.cursor/debug.log';
+            $logDir = dirname($logPath);
+            if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+            @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_upload_failed','timestamp'=>time()*1000,'location'=>'dashboard.php:250','message'=>'Photo upload failed','data'=>['error'=>$uploadResult['message']??''],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
             // #endregion
             return ['success' => false, 'message' => $uploadResult['message']];
         }
@@ -261,7 +267,10 @@ function handleFoundItemReport($item, $fileUpload) {
     $result = $item->create($adminID, $itemName, $itemClass, $description, $dateFound, $locationFound, $photoURL);
     
     // #region agent log
-    file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_handle_result','timestamp'=>time()*1000,'location'=>'dashboard.php:254','message'=>'handleFoundItemReport result','data'=>$result,'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+    $logPath = __DIR__ . '/../.cursor/debug.log';
+    $logDir = dirname($logPath);
+    if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+    @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_handle_result','timestamp'=>time()*1000,'location'=>'dashboard.php:254','message'=>'handleFoundItemReport result','data'=>$result,'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
     // #endregion
     
     return $result;
