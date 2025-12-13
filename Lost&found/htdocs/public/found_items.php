@@ -33,7 +33,7 @@ if ($conn === null) {
       $foundWhere[] = 'c.ClassName LIKE :class';
       $foundParams['class'] = '%' . $_GET['found_class'] . '%';
     }
-    $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
+    $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE (i.StatusConfirmed = 1 OR i.StatusConfirmed = "1")';
     if ($foundWhere) {
       $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
     }
@@ -63,10 +63,16 @@ if ($conn === null) {
         $allItems = $checkStmt->fetchAll(PDO::FETCH_ASSOC);
         @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_db_state','timestamp'=>time()*1000,'location'=>'found_items.php:50','message'=>'Database state check','data'=>['allItems'=>$allItems],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
         
-        $statsStmt = $conn->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN StatusConfirmed = 1 THEN 1 ELSE 0 END) as approved, SUM(CASE WHEN StatusConfirmed = 0 THEN 1 ELSE 0 END) as pending FROM `item`');
+        $statsStmt = $conn->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN StatusConfirmed = 1 OR StatusConfirmed = "1" THEN 1 ELSE 0 END) as approved, SUM(CASE WHEN StatusConfirmed = 0 OR StatusConfirmed = "0" THEN 1 ELSE 0 END) as pending FROM `item`');
         $statsStmt->execute();
         $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
-        @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_stats','timestamp'=>time()*1000,'location'=>'found_items.php:55','message'=>'Item statistics','data'=>$stats,'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        
+        // Also check the actual StatusConfirmed values
+        $typeCheckStmt = $conn->prepare('SELECT ItemID, ItemName, StatusConfirmed FROM `item` ORDER BY ItemID DESC LIMIT 10');
+        $typeCheckStmt->execute();
+        $typeCheck = $typeCheckStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        @file_put_contents($logPath, json_encode(['id'=>'log_'.time().'_stats','timestamp'=>time()*1000,'location'=>'found_items.php:55','message'=>'Item statistics','data'=>['stats'=>$stats,'typeCheck'=>$typeCheck],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
         // #endregion
         
         // Debug: Log if no items found
@@ -153,6 +159,33 @@ if ($conn === null) {
       </div>
     </div>
   </div>
+  <!-- Debug Information (remove after fixing) -->
+  <?php if ($conn): ?>
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="alert alert-info">
+          <strong>Debug Info:</strong><br>
+          Total items in database: <?php echo $stats['total'] ?? 0; ?><br>
+          Approved (StatusConfirmed=1): <?php echo $stats['approved'] ?? 0; ?><br>
+          Pending (StatusConfirmed=0): <?php echo $stats['pending'] ?? 0; ?><br>
+          Query returned: <?php echo count($foundItems); ?> items<br>
+          <?php if (isset($allItems) && !empty($allItems)): ?>
+            <strong>Recent 5 items in DB:</strong><br>
+            <?php foreach ($allItems as $item): ?>
+              - ID: <?php echo $item['ItemID']; ?>, Name: <?php echo htmlspecialchars($item['ItemName']); ?>, StatusConfirmed: <?php echo var_export($item['StatusConfirmed'], true); ?> (type: <?php echo gettype($item['StatusConfirmed']); ?>)<br>
+            <?php endforeach; ?>
+          <?php endif; ?>
+          <?php if (isset($typeCheck) && !empty($typeCheck)): ?>
+            <strong>StatusConfirmed values:</strong><br>
+            <?php foreach ($typeCheck as $item): ?>
+              - ID: <?php echo $item['ItemID']; ?>, Status: <?php echo var_export($item['StatusConfirmed'], true); ?><br>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+  <?php endif; ?>
+  
   <div class="row g-4">
     <?php if (count($foundItems) > 0): ?>
       <?php foreach ($foundItems as $idx => $item): ?>
