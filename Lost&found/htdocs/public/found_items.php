@@ -59,13 +59,8 @@ if ($conn === null) {
       $foundWhere[] = 'c.ClassName LIKE :class';
       $foundParams['class'] = '%' . $_GET['found_class'] . '%';
     }
-<<<<<<< HEAD
     // Query for approved found items - matches pattern from all_lost.php
     $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
-=======
-    // Query for approved found items - using CAST to ensure proper comparison with tinyint
-    $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE CAST(i.StatusConfirmed AS SIGNED) = 1';
->>>>>>> 0f4eaf9fb3a9ba0e5613ffe7ece8fd194d0c8316
     if ($foundWhere) {
       $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
     }
