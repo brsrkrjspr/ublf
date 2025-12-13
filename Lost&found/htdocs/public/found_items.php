@@ -39,10 +39,29 @@ if ($conn === null) {
     }
     $foundSql .= ' ORDER BY i.CreatedAt DESC';
     
+    // #region agent log
+    file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_found_query','timestamp'=>time()*1000,'location'=>'found_items.php:36','message'=>'Found items query prepared','data'=>['sql'=>$foundSql,'params'=>$foundParams],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+    // #endregion
+    
     try {
         $stmt = $conn->prepare($foundSql);
         $stmt->execute($foundParams);
         $foundItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // #region agent log
+        file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_found_results','timestamp'=>time()*1000,'location'=>'found_items.php:45','message'=>'Found items query executed','data'=>['resultCount'=>count($foundItems),'firstItem'=>$foundItems[0]??null],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        
+        // Check database state
+        $checkStmt = $conn->prepare('SELECT ItemID, StatusConfirmed, ItemClassID, AdminID, ItemName FROM `item` ORDER BY ItemID DESC LIMIT 5');
+        $checkStmt->execute();
+        $allItems = $checkStmt->fetchAll(PDO::FETCH_ASSOC);
+        file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_db_state','timestamp'=>time()*1000,'location'=>'found_items.php:50','message'=>'Database state check','data'=>['allItems'=>$allItems],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        
+        $statsStmt = $conn->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN StatusConfirmed = 1 THEN 1 ELSE 0 END) as approved, SUM(CASE WHEN StatusConfirmed = 0 THEN 1 ELSE 0 END) as pending FROM `item`');
+        $statsStmt->execute();
+        $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+        file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_stats','timestamp'=>time()*1000,'location'=>'found_items.php:55','message'=>'Item statistics','data'=>$stats,'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        // #endregion
         
         // Debug: Log if no items found
         if (empty($foundItems)) {
@@ -54,9 +73,15 @@ if ($conn === null) {
             error_log("Found Items Stats: Total items: " . ($stats['total'] ?? 0) . ", Approved: " . ($stats['approved'] ?? 0));
         }
     } catch (PDOException $e) {
+        // #region agent log
+        file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_sql_error','timestamp'=>time()*1000,'location'=>'found_items.php:57','message'=>'SQL error','data'=>['error'=>$e->getMessage(),'sql'=>$foundSql],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'E'])."\n", FILE_APPEND);
+        // #endregion
         error_log("Found Items SQL Error: " . $e->getMessage() . " | SQL: " . $foundSql);
         $foundItems = [];
     } catch (Exception $e) {
+        // #region agent log
+        file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_exception','timestamp'=>time()*1000,'location'=>'found_items.php:60','message'=>'Exception','data'=>['error'=>$e->getMessage()],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'E'])."\n", FILE_APPEND);
+        // #endregion
         error_log("Found Items Error: " . $e->getMessage());
         $foundItems = [];
     }

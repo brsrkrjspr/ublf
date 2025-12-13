@@ -14,11 +14,19 @@ class Item {
     }
 
     public function create($adminID, $itemName, $itemClass, $description, $dateFound, $locationFound, $photoURL = null) {
+        // #region agent log
+        file_put_contents(__DIR__ . '/../../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_item_create_entry','timestamp'=>time()*1000,'location'=>'Item.php:16','message'=>'Item::create called','data'=>['adminID'=>$adminID,'itemName'=>$itemName,'itemClass'=>$itemClass,'StatusConfirmed'=>1],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        // #endregion
+        
         // Get or create ItemClassID
         $itemClassID = $this->getOrCreateItemClass($itemClass);
         
+        // #region agent log
+        file_put_contents(__DIR__ . '/../../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_item_classid','timestamp'=>time()*1000,'location'=>'Item.php:20','message'=>'ItemClassID resolved','data'=>['itemClassID'=>$itemClassID],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'B'])."\n", FILE_APPEND);
+        // #endregion
+        
         $query = "INSERT INTO {$this->table} (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusID, StatusConfirmed) 
-                  VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 1, 0)";
+                  VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 1, 1)";
         
         $stmt = $this->conn->prepare($query);
         $result = $stmt->execute([
@@ -31,8 +39,21 @@ class Item {
             'photoURL' => $photoURL
         ]);
 
+        $itemID = $result ? $this->conn->lastInsertId() : null;
+        
+        // #region agent log
+        if ($result) {
+            $verifyStmt = $this->conn->prepare("SELECT ItemID, StatusConfirmed, ItemClassID, AdminID FROM {$this->table} WHERE ItemID = :id");
+            $verifyStmt->execute(['id' => $itemID]);
+            $inserted = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+            file_put_contents(__DIR__ . '/../../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_item_inserted','timestamp'=>time()*1000,'location'=>'Item.php:35','message'=>'Item inserted to database','data'=>['itemID'=>$itemID,'insertedStatusConfirmed'=>$inserted['StatusConfirmed']??null,'insertedItemClassID'=>$inserted['ItemClassID']??null,'insertedAdminID'=>$inserted['AdminID']??null],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        } else {
+            file_put_contents(__DIR__ . '/../../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_item_failed','timestamp'=>time()*1000,'location'=>'Item.php:35','message'=>'Item insert failed','data'=>[],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        }
+        // #endregion
+
         return $result ? 
-            ['success' => true, 'message' => 'Found item report submitted successfully. It will be visible to others after admin approval.', 'id' => $this->conn->lastInsertId()] : 
+            ['success' => true, 'message' => 'Found item report submitted successfully. It is now visible to others.', 'id' => $itemID] : 
             ['success' => false, 'message' => 'Failed to report found item.'];
     }
 
