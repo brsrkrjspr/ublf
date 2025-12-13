@@ -71,7 +71,7 @@ try {
         }
     } else {
         // Create new admin if doesn't exist
-        $stmt = $conn->prepare("INSERT INTO admin (Username, PasswordHash, Email, AdminName) VALUES (:username, :passwordHash, :email, :adminName)");
+        $stmt = $conn->prepare("INSERT INTO `admin` (Username, PasswordHash, Email, AdminName) VALUES (:username, :passwordHash, :email, :adminName)");
         $result = $stmt->execute([
             'username' => $username,
             'passwordHash' => $passwordHash,

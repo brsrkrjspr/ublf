@@ -70,9 +70,9 @@ function processMatchCheck($conn, $reportID, $student) {
     // Get full report details
     $stmt = $conn->prepare('
         SELECT r.*, ic.ClassName, s.StudentName, s.Email 
-        FROM reportitem r 
-        LEFT JOIN itemclass ic ON r.ItemClassID = ic.ItemClassID 
-        JOIN student s ON r.StudentNo = s.StudentNo 
+        FROM `reportitem` r 
+        LEFT JOIN `itemclass` ic ON r.ItemClassID = ic.ItemClassID 
+        LEFT JOIN `student` s ON r.StudentNo = s.StudentNo 
         WHERE r.ReportID = :id AND r.StudentNo = :studentNo AND r.StatusConfirmed = 1
     ');
     $stmt->execute(['id' => $reportID, 'studentNo' => $student['StudentNo']]);
