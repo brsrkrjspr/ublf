@@ -19,7 +19,7 @@ if (!$name || !$username || !$email || !$password) {
     exit;
 }
 // Check for duplicate username/email
-$stmt = $conn->prepare('SELECT AdminID FROM `admin` WHERE Username = :username OR Email = :email LIMIT 1');
+$stmt = $conn->prepare('SELECT AdminID FROM Admin WHERE Username = :username OR Email = :email LIMIT 1');
 $stmt->execute(['username' => $username, 'email' => $email]);
 if ($stmt->fetch()) {
     $_SESSION['admin_msg'] = 'Username or email already exists.';
@@ -28,7 +28,7 @@ if ($stmt->fetch()) {
 }
 // Hash password
 $passwordHash = password_hash($password, PASSWORD_BCRYPT);
-$stmt = $conn->prepare('INSERT INTO `admin` (AdminName, Username, Email, PasswordHash) VALUES (:name, :username, :email, :password)');
+$stmt = $conn->prepare('INSERT INTO Admin (AdminName, Username, Email, PasswordHash) VALUES (:name, :username, :email, :password)');
 $result = $stmt->execute([
     'name' => $name,
     'username' => $username,

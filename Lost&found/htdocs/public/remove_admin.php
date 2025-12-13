@@ -22,7 +22,7 @@ if ($adminID == $currentAdminID) {
     exit;
 }
 // Check if this is the last admin
-$stmt = $conn->query('SELECT COUNT(*) FROM `admin`');
+$stmt = $conn->query('SELECT COUNT(*) FROM Admin');
 $totalAdmins = $stmt->fetchColumn();
 if ($totalAdmins <= 1) {
     $_SESSION['admin_msg'] = 'Cannot remove the last admin.';
@@ -30,7 +30,7 @@ if ($totalAdmins <= 1) {
     exit;
 }
 // Remove admin
-$stmt = $conn->prepare('DELETE FROM `admin` WHERE AdminID = :adminID');
+$stmt = $conn->prepare('DELETE FROM Admin WHERE AdminID = :adminID');
 $result = $stmt->execute(['adminID' => $adminID]);
 if ($result) {
     $_SESSION['admin_msg'] = 'Admin removed successfully!';

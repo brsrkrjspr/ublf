@@ -177,7 +177,7 @@ if ($type === 'photo' && $id) {
         
         // Trigger match detection for this newly approved lost item
         // Get full report details for match detection
-        $fullReportStmt = $conn->prepare('SELECT r.*, ic.ClassName FROM `reportitem` r LEFT JOIN `itemclass` ic ON r.ItemClassID = ic.ItemClassID WHERE r.ReportID = :id');
+        $fullReportStmt = $conn->prepare('SELECT r.*, ic.ClassName FROM reportitem r LEFT JOIN itemclass ic ON r.ItemClassID = ic.ItemClassID WHERE r.ReportID = :id');
         $fullReportStmt->execute(['id' => $id]);
         $fullReport = $fullReportStmt->fetch(PDO::FETCH_ASSOC);
         

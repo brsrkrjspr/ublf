@@ -24,7 +24,7 @@ if ($newPassword !== $confirmPassword) {
     exit;
 }
 // Fetch current password hash
-$stmt = $conn->prepare('SELECT PasswordHash FROM `admin` WHERE AdminID = :adminID LIMIT 1');
+$stmt = $conn->prepare('SELECT PasswordHash FROM Admin WHERE AdminID = :adminID LIMIT 1');
 $stmt->execute(['adminID' => $adminID]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$row || !password_verify($currentPassword, $row['PasswordHash'])) {
@@ -34,7 +34,7 @@ if (!$row || !password_verify($currentPassword, $row['PasswordHash'])) {
 }
 // Update password
 $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
-$stmt = $conn->prepare('UPDATE `admin` SET PasswordHash = :newHash WHERE AdminID = :adminID');
+$stmt = $conn->prepare('UPDATE Admin SET PasswordHash = :newHash WHERE AdminID = :adminID');
 $result = $stmt->execute(['newHash' => $newHash, 'adminID' => $adminID]);
 if ($result) {
     $_SESSION['admin_settings_msg'] = 'Password changed successfully!';
