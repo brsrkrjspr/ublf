@@ -17,7 +17,7 @@ $student = $stmt->fetch(PDO::FETCH_ASSOC);
 // Update session with fresh data
 $_SESSION['student'] = $student;
 // Fetch user's lost item reports
-$stmt = $conn->prepare('SELECT r.ReportID, c.ClassName, r.Description, r.DateOfLoss, r.CreatedAt, r.PhotoURL, rs.StatusName, r.StatusConfirmed FROM `reportitem` r LEFT JOIN `itemclass` c ON r.ItemClassID = c.ItemClassID LEFT JOIN `reportstatus` rs ON r.ReportStatusID = rs.ReportStatusID WHERE r.StudentNo = :studentNo ORDER BY r.CreatedAt DESC');
+$stmt = $conn->prepare('SELECT r.ReportID, c.ClassName, r.Description, r.DateOfLoss, r.CreatedAt, r.PhotoURL, rs.StatusName, r.StatusConfirmed FROM reportitem r JOIN itemclass c ON r.ItemClassID = c.ItemClassID LEFT JOIN reportstatus rs ON r.ReportStatusID = rs.ReportStatusID WHERE r.StudentNo = :studentNo ORDER BY r.CreatedAt DESC');
 $stmt->execute(['studentNo' => $student['StudentNo']]);
 $myReports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $msg = $_SESSION['profile_msg'] ?? '';

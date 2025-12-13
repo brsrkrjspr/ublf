@@ -247,7 +247,7 @@ if ($section === 'site') {
       $pwMsg = '<div class="alert alert-warning">New password must be at least 6 characters.</div>';
     } else {
       $newHash = password_hash($new, PASSWORD_BCRYPT);
-      $stmt = $conn->prepare('UPDATE `admin` SET PasswordHash = :pw WHERE AdminID = :id');
+      $stmt = $conn->prepare('UPDATE Admin SET PasswordHash = :pw WHERE AdminID = :id');
       if ($stmt->execute(['pw' => $newHash, 'id' => $adminID])) {
         $pwMsg = '<div class="alert alert-success">Password changed successfully!</div>';
       } else {
@@ -355,11 +355,11 @@ if ($section === 'export') {
     $out = fopen('php://output', 'w');
     if ($type === 'lost') {
       fputcsv($out, ['ReportID','ItemName','ClassName','Description','DateOfLoss','LostLocation','StudentNo']);
-      $stmt = $conn->query('SELECT r.ReportID, r.ItemName, c.ClassName, r.Description, r.DateOfLoss, r.LostLocation, r.StudentNo FROM `reportitem` r LEFT JOIN `itemclass` c ON r.ItemClassID = c.ItemClassID');
+      $stmt = $conn->query('SELECT r.ReportID, r.ItemName, c.ClassName, r.Description, r.DateOfLoss, r.LostLocation, r.StudentNo FROM `reportitem` r JOIN `itemclass` c ON r.ItemClassID = c.ItemClassID');
       while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) fputcsv($out, $row);
     } elseif ($type === 'found') {
       fputcsv($out, ['ItemID','ItemName','ClassName','Description','DateFound','LocationFound','AdminID']);
-      $stmt = $conn->query('SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.AdminID FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID');
+      $stmt = $conn->query('SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.AdminID FROM `item` i JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID');
       while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) fputcsv($out, $row);
     } elseif ($type === 'students') {
       fputcsv($out, ['StudentNo','StudentName','Email','PhoneNo','Active']);
