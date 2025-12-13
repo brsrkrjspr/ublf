@@ -18,7 +18,7 @@ class Item {
         $itemClassID = $this->getOrCreateItemClass($itemClass);
         
         $query = "INSERT INTO {$this->table} (AdminID, ItemName, ItemClassID, Description, DateFound, LocationFound, PhotoURL, StatusID, StatusConfirmed) 
-                  VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 1, 1)";
+                  VALUES (:adminID, :itemName, :itemClassID, :description, :dateFound, :locationFound, :photoURL, 1, 0)";
         
         $stmt = $this->conn->prepare($query);
         $result = $stmt->execute([
@@ -32,7 +32,7 @@ class Item {
         ]);
 
         return $result ? 
-            ['success' => true, 'message' => 'Found item report submitted successfully. It is now visible to others.', 'id' => $this->conn->lastInsertId()] : 
+            ['success' => true, 'message' => 'Found item report submitted successfully. It will be visible to others after admin approval.', 'id' => $this->conn->lastInsertId()] : 
             ['success' => false, 'message' => 'Failed to report found item.'];
     }
 
