@@ -234,6 +234,10 @@ function handleLostItemReport($reportItem, $fileUpload) {
 }
 
 function handleFoundItemReport($item, $fileUpload) {
+        // #region agent log
+        file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_handle_entry','timestamp'=>time()*1000,'location'=>'dashboard.php:236','message'=>'handleFoundItemReport called','data'=>['itemName'=>$_POST['foundItemName']??'','itemClass'=>$_POST['foundItemClass']??''],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+        // #endregion
+        
         $adminID = 1; // For demo, use AdminID=1. In real app, use session for admin login.
         $itemName = $_POST['foundItemName'] ?? '';
         $itemClass = $_POST['foundItemClass'] ?? '';
@@ -247,11 +251,20 @@ function handleFoundItemReport($item, $fileUpload) {
         if ($uploadResult['success']) {
             $photoURL = $uploadResult['path'];
         } else {
+            // #region agent log
+            file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_upload_failed','timestamp'=>time()*1000,'location'=>'dashboard.php:250','message'=>'Photo upload failed','data'=>['error'=>$uploadResult['message']??''],'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+            // #endregion
             return ['success' => false, 'message' => $uploadResult['message']];
         }
     }
     
-    return $item->create($adminID, $itemName, $itemClass, $description, $dateFound, $locationFound, $photoURL);
+    $result = $item->create($adminID, $itemName, $itemClass, $description, $dateFound, $locationFound, $photoURL);
+    
+    // #region agent log
+    file_put_contents(__DIR__ . '/../.cursor/debug.log', json_encode(['id'=>'log_'.time().'_handle_result','timestamp'=>time()*1000,'location'=>'dashboard.php:254','message'=>'handleFoundItemReport result','data'=>$result,'sessionId'=>'debug-session','runId'=>'run1','hypothesisId'=>'A'])."\n", FILE_APPEND);
+    // #endregion
+    
+    return $result;
 }
 ?>
 <!DOCTYPE html>
