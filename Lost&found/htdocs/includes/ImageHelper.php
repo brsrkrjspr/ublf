@@ -80,11 +80,9 @@ function getPlaceholderImage() {
 /**
  * Get onerror handler for images (fallback to placeholder)
  * 
- * @return string onerror attribute value (properly escaped for HTML attributes)
+ * @return string onerror attribute value
  */
 function getImageErrorHandler() {
     $placeholder = getPlaceholderImage();
-    // Properly escape for HTML attribute (convert single quotes to entity and escape quotes)
-    $escapedPlaceholder = htmlspecialchars($placeholder, ENT_QUOTES, 'UTF-8');
-    return "this.onerror=null; this.src='" . $escapedPlaceholder . "';";
+    return "this.onerror=null; this.src='$placeholder';";
 }
