@@ -13,11 +13,37 @@ $conn = $db->getConnection();
 // Initialize variables
 $foundItems = [];
 $itemClasses = ['Electronics', 'Books', 'Clothing', 'Bags', 'ID Cards', 'Keys', 'Others'];
+$stats = ['total' => 0, 'approved' => 0, 'pending' => 0, 'null_status' => 0, 'rejected' => 0];
+$allItems = [];
+$typeCheck = [];
+$dbDiagnostics = ['database' => 'unknown', 'table_exists' => false, 'direct_count' => 0, 'error' => null];
 
 if ($conn === null) {
     // Database connection failed - use default item classes
     error_log("Found Items: Database connection unavailable");
 } else {
+    // Comprehensive database diagnostics BEFORE queries
+    try {
+        // Check database name
+        $dbNameStmt = $conn->query('SELECT DATABASE() as dbname');
+        $dbNameResult = $dbNameStmt->fetch(PDO::FETCH_ASSOC);
+        $dbDiagnostics['database'] = $dbNameResult['dbname'] ?? 'unknown';
+        
+        // Check if table exists
+        $tableCheck = $conn->query("SHOW TABLES LIKE 'item'");
+        $dbDiagnostics['table_exists'] = $tableCheck->rowCount() > 0;
+        
+        // Direct count query (no JOINs, no WHERE clauses)
+        if ($dbDiagnostics['table_exists']) {
+            $countStmt = $conn->query("SELECT COUNT(*) as cnt FROM `item`");
+            $countResult = $countStmt->fetch(PDO::FETCH_ASSOC);
+            $dbDiagnostics['direct_count'] = (int)($countResult['cnt'] ?? 0);
+        }
+    } catch (Exception $e) {
+        $dbDiagnostics['error'] = $e->getMessage();
+        error_log("Found Items: Database diagnostics error - " . $e->getMessage());
+    }
+    
     // Filtering logic for found items
     $foundWhere = [];
     $foundParams = [];
@@ -33,7 +59,12 @@ if ($conn === null) {
       $foundWhere[] = 'c.ClassName LIKE :class';
       $foundParams['class'] = '%' . $_GET['found_class'] . '%';
     }
+<<<<<<< Updated upstream
     $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE (i.StatusConfirmed = 1 OR i.StatusConfirmed = "1")';
+=======
+    // Query for approved found items - matches pattern from all_lost.php
+    $foundSql = 'SELECT i.ItemID, i.ItemName, c.ClassName, i.Description, i.DateFound, i.LocationFound, i.PhotoURL, i.CreatedAt, COALESCE(a.AdminName, "Unknown") as AdminName, COALESCE(a.Email, "N/A") as Email FROM `item` i LEFT JOIN `itemclass` c ON i.ItemClassID = c.ItemClassID LEFT JOIN `admin` a ON i.AdminID = a.AdminID WHERE i.StatusConfirmed = 1';
+>>>>>>> Stashed changes
     if ($foundWhere) {
       $foundSql .= ' AND ' . implode(' AND ', $foundWhere);
     }
@@ -65,7 +96,8 @@ if ($conn === null) {
         
         $statsStmt = $conn->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN StatusConfirmed = 1 OR StatusConfirmed = "1" THEN 1 ELSE 0 END) as approved, SUM(CASE WHEN StatusConfirmed = 0 OR StatusConfirmed = "0" THEN 1 ELSE 0 END) as pending FROM `item`');
         $statsStmt->execute();
-        $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+        $statsResult = $statsStmt->fetch(PDO::FETCH_ASSOC);
+        $stats = $statsResult ?: ['total' => 0, 'approved' => 0, 'pending' => 0, 'null_status' => 0, 'rejected' => 0];
         
         // Also check the actual StatusConfirmed values
         $typeCheckStmt = $conn->prepare('SELECT ItemID, ItemName, StatusConfirmed FROM `item` ORDER BY ItemID DESC LIMIT 10');
@@ -93,6 +125,7 @@ if ($conn === null) {
         // #endregion
         error_log("Found Items SQL Error: " . $e->getMessage() . " | SQL: " . $foundSql);
         $foundItems = [];
+        $stats = ['total' => 0, 'approved' => 0, 'pending' => 0, 'null_status' => 0, 'rejected' => 0, 'error' => $e->getMessage()];
     } catch (Exception $e) {
         // #region agent log
         $logPath = __DIR__ . '/../.cursor/debug.log';
@@ -102,6 +135,7 @@ if ($conn === null) {
         // #endregion
         error_log("Found Items Error: " . $e->getMessage());
         $foundItems = [];
+        $stats = ['total' => 0, 'approved' => 0, 'pending' => 0, 'null_status' => 0, 'rejected' => 0, 'error' => $e->getMessage()];
     }
 
     // Fetch item classes for dropdown
@@ -165,10 +199,26 @@ if ($conn === null) {
       <div class="col-12">
         <div class="alert alert-info">
           <strong>Debug Info:</strong><br>
+          <strong style="color:blue;">Database Connection Diagnostics:</strong><br>
+          - Connected to database: <strong><?php echo htmlspecialchars($dbDiagnostics['database']); ?></strong><br>
+          - Table 'item' exists: <strong><?php echo $dbDiagnostics['table_exists'] ? 'YES' : 'NO'; ?></strong><br>
+          - Direct COUNT(*) query: <strong><?php echo $dbDiagnostics['direct_count']; ?></strong> items<br>
+          <?php if ($dbDiagnostics['error']): ?>
+            - <strong style="color:red;">Diagnostics Error: <?php echo htmlspecialchars($dbDiagnostics['error']); ?></strong><br>
+          <?php endif; ?>
+          <hr>
+          <strong style="color:blue;">Statistics Query Results:</strong><br>
           Total items in database: <?php echo $stats['total'] ?? 0; ?><br>
           Approved (StatusConfirmed=1): <?php echo $stats['approved'] ?? 0; ?><br>
           Pending (StatusConfirmed=0): <?php echo $stats['pending'] ?? 0; ?><br>
+          Rejected (StatusConfirmed=-1): <?php echo $stats['rejected'] ?? 0; ?><br>
+          NULL StatusConfirmed: <?php echo $stats['null_status'] ?? 0; ?><br>
+          <hr>
+          <strong style="color:blue;">Main Query Results:</strong><br>
           Query returned: <?php echo count($foundItems); ?> items<br>
+          <?php if (isset($stats['error'])): ?>
+            <strong style="color:red;">Query Error: <?php echo htmlspecialchars($stats['error']); ?></strong><br>
+          <?php endif; ?>
           <?php if (isset($allItems) && !empty($allItems)): ?>
             <strong>Recent 5 items in DB:</strong><br>
             <?php foreach ($allItems as $item): ?>
