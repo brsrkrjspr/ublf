@@ -186,7 +186,7 @@ class Admin {
         // Pending lost item approvals
         $stmt = $this->conn->prepare("
             SELECT ri.ReportID, ri.ItemName, ri.Description, ri.DateOfLoss, ri.LostLocation, ri.PhotoURL, ri.ReportStatusID,
-                   s.StudentName, ic.ClassName
+                   ri.StudentNo, s.StudentName, ic.ClassName
             FROM `reportitem` ri
             JOIN `student` s ON ri.StudentNo = s.StudentNo
             JOIN `itemclass` ic ON ri.ItemClassID = ic.ItemClassID

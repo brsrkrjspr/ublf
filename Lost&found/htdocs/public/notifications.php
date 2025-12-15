@@ -85,13 +85,61 @@ $unreadCount = $notification->getUnreadCount($student['StudentNo']);
     }
     .empty-state {
       text-align: center;
-      padding: 3rem 1rem;
-      color: #6c757d;
+      padding: 4rem 2rem;
+      background: linear-gradient(135deg, #fff9f6 0%, #ffffff 100%);
+      border-radius: 1.5rem;
+      box-shadow: 0 4px 20px rgba(128,0,0,0.08);
+      margin: 2rem 0;
     }
-    .empty-state i {
+    .empty-state-icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 2rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .empty-state-icon i {
       font-size: 4rem;
+      color: #adb5bd;
+      position: relative;
+      z-index: 1;
+    }
+    .empty-state-icon::after {
+      content: '';
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.8);
+      z-index: 0;
+    }
+    .empty-state h4 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #495057;
       margin-bottom: 1rem;
-      opacity: 0.5;
+    }
+    .empty-state p {
+      font-size: 1rem;
+      color: #6c757d;
+      line-height: 1.6;
+      max-width: 500px;
+      margin: 0 auto 2rem;
+    }
+    .empty-state .btn {
+      padding: 0.75rem 2rem;
+      font-weight: 600;
+      border-radius: 2rem;
+      box-shadow: 0 4px 12px rgba(128,0,0,0.15);
+      transition: all 0.3s ease;
+    }
+    .empty-state .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(128,0,0,0.25);
     }
   </style>
 </head>
@@ -159,12 +207,19 @@ $unreadCount = $notification->getUnreadCount($student['StudentNo']);
         </div>
       <?php else: ?>
         <div class="empty-state">
-          <i class="bi bi-bell-slash"></i>
+          <div class="empty-state-icon">
+            <i class="bi bi-bell-slash"></i>
+          </div>
           <h4>No notifications yet</h4>
-          <p>You'll see notifications here when admins approve or reject your submissions, or when there are important updates.</p>
-          <a href="dashboard.php" class="btn btn-primary">
-            <i class="bi bi-house me-1"></i>Go to Dashboard
-          </a>
+          <p>You're all caught up! You'll see notifications here when admins approve or reject your submissions, or when there are important updates about your lost and found items.</p>
+          <div class="d-flex gap-2 justify-content-center flex-wrap">
+            <a href="dashboard.php" class="btn btn-primary">
+              <i class="bi bi-house me-2"></i>Go to Dashboard
+            </a>
+            <a href="report_lost.php" class="btn btn-outline-primary">
+              <i class="bi bi-plus-circle me-2"></i>Report Lost Item
+            </a>
+          </div>
         </div>
       <?php endif; ?>
     </div>
